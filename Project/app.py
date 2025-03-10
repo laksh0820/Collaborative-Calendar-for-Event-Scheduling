@@ -1,13 +1,16 @@
 from flask import Flask
 from flask import request, render_template, jsonify
 import json
-import os
 
 app = Flask(__name__)
 
 @app.route('/')
-def calendar():
-    return render_template("index.html")
+def base():
+    return render_template("base.html")
+
+@app.route('/calendar')
+def get_calendar():
+    return render_template('calendar.html')
 
 @app.route('/data')
 def return_data():
