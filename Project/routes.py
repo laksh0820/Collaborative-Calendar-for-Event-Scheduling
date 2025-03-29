@@ -1,8 +1,7 @@
 from flask import Flask
 from flask import request, render_template, jsonify
+from Project import app
 import json
-
-app = Flask(__name__)
 
 @app.route('/')
 def base():
@@ -37,6 +36,3 @@ def add_event():
     events.append(new_event)
     save_events(events)
     return jsonify(success=True)
-
-if __name__ == '__main__':
-    app.run(debug=True)
