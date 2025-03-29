@@ -2,6 +2,10 @@ from flask import Flask
 from flask import request, render_template, jsonify
 from Project import app
 import json
+import os
+
+# Define the path to the events.json file
+EVENTS_FILE = os.path.join(os.path.dirname(__file__), 'events.json')
 
 @app.route('/')
 def base():
@@ -16,17 +20,17 @@ def return_data():
     start_date = request.args.get('start', '')
     end_date = request.args.get('end', '')
 
-    with open("events.json", "r") as input_data:
+    with open(EVENTS_FILE, "r") as input_data:
         return input_data.read()
     
 # Load existing events from the file (if it exists)
 def load_events():
-    with open("events.json", 'r') as file:
+    with open(EVENTS_FILE, 'r') as file:
         return json.load(file)
     
 # Save events to the file
 def save_events(events):
-    with open("events.json", 'w') as file:
+    with open(EVENTS_FILE, 'w') as file:
         json.dump(events, file, indent=4)
 
 @app.route('/add_event',methods=['POST'])
