@@ -75,8 +75,25 @@ body {
   left: 90%;
 }
 
-.sidebar ul {
+.sidebar.active ul {
   margin-top: 20px;
+  height: calc(100% - 140px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 20px;
+}
+
+.sidebar.active ul::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar.active ul::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sidebar.active ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .sidebar ul li {
