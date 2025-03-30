@@ -63,12 +63,27 @@ def signout():
     flash("Logged out Successfully",'success')
     return redirect(url_for('signin'))
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template("dashboard.html")
+
+
+@app.route('/create_group')
+@login_required
+def create_group():
+    form = GroupForm()
+    if form.validate_on_submit():
+        pass
+    return render_template('dashboard.html',form=form,createGroup=True)
+
 # Define the path to the events.json file
 EVENTS_FILE = os.path.join(os.path.dirname(__file__), 'events.json')
 
 @app.route('/')
 def base():
     return render_template("base.html")
+
 
 @app.route('/calendar')
 def get_calendar():

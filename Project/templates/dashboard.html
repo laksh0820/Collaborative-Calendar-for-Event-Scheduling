@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <a href="{{ url_for('create_group') }}">Create Group</a>
+
+    {% if createGroup %}
+    <p>Clicked</p>
+    {% endif %}
+{% endblock %}
