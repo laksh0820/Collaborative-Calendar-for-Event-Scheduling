@@ -106,7 +106,7 @@ body {
   position: relative;
   height: 50px;
   width: 100%;
-  margin: 3px 2px;
+  margin: 3px 0px;
   list-style: none;
   line-height: 50px;
 }
@@ -332,16 +332,15 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 0.5rem;
-  padding-right: 1rem;
-  padding-bottom: 0.5rem;
-  padding-left: 1rem;
+  left: 78px;
+  width: 95%;
+  transition: all 0.5s ease;
 }
 
 .navbar-brand {
   font-size: 1.5em !important;
   font-weight: bold !important;
-  margin-left: 100px;
+  margin-left: 10px;
 }
 
 .navbar-nav {
@@ -366,7 +365,7 @@ body {
 .navbar-nav a {
   color: #11101d;
   display: flex;
-  padding: 10px 25px;
+  padding: 10px 10px;
   align-items: center;
   text-decoration: none;
   border-radius: 5px;
@@ -377,6 +376,13 @@ body {
 .navbar-nav a:hover {
   color: #ddd;
 }
+
+.sidebar.active ~ .navbar {
+  left: 240px;
+  width: calc(100% - 240px);
+  transition: all 0.5s ease;
+}
+
 
 /* Content Styles */
 .content {
