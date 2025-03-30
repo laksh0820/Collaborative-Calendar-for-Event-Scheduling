@@ -10,7 +10,29 @@ document.addEventListener('DOMContentLoaded', function () {
       },
       weekNumbers: true,
       dayMaxEvents: true,
+      eventDidMount: function(info) {
+        // Add tooltip if description exists
+        if (info.event.extendedProps.description) {
+          new bootstrap.Tooltip(info.el, {
+            title: info.event.extendedProps.description,
+            placement: 'top',
+            trigger: 'hover'
+          });
+        }
+      },
       events: '/data', // Fetch events from server
+      eventClick: function(info) {
+        // Modal approach
+        const modal = new bootstrap.Modal('#eventDetailModal');
+        document.getElementById('modalEventTitle').innerText = info.event.title;
+        document.getElementById('modalEventStartDate').innerText = info.event.start.toISOString().replace('T',' ').substring(0,16);
+        document.getElementById('modalEventEndDate').innerText = info.event.end.toISOString().replace('T',' ').substring(0,16);
+        document.getElementById('modalEventDescription').innerText = 
+          info.event.extendedProps?.description || 'No description';
+        modal.show();
+        info.jsEvent.preventDefault();
+      
+      },  
       selectable: true, // Enable date/time selection
       select: function(arg) {
           // Open the modal when a time range is selected
@@ -31,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#saveEvent').on('click', function() {
       var eventTitle = $('#eventTitle').val();
       var eventStart = $('#eventStart').val();
+      var description = $('#message-text').val();
       var eventEnd = $('#eventEnd').val();
 
       $.ajax({
@@ -39,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
         contentType: 'application/json',
         data: JSON.stringify({
           title: eventTitle,
+          description: description,
           start: eventStart,
           end: eventEnd
         }),
@@ -46,6 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
           calendar.addEvent({ // Add event to calendar
             title: eventTitle,
             start: eventStart,
+            description: description,
             end: eventEnd
           });
           $('#eventModal').modal('hide');
