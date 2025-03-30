@@ -10,7 +10,7 @@
 body {
   font-family: 'Poppins', sans-serif !important;
   height: 130vh;
-  background: linear-gradient(#fafafc, #a0aef8);
+  background: linear-gradient(#fafafc, #95a7fd);
 }
 
 .container {
@@ -75,41 +75,43 @@ body {
   left: 90%;
 }
 
-.sidebar.active .nav_list {
-  margin-top: 20px;
+.sidebar.active ul {
+  margin-top: 25px;
   height: calc(100% - 140px);
   overflow-y: auto;
   overflow-x: hidden;
+  padding-left: 0px;
   padding-bottom: 20px;
 }
 
-.sidebar.active .nav_list::-webkit-scrollbar {
+.sidebar.active ul::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar.active .nav_list::-webkit-scrollbar-thumb {
+.sidebar.active ul::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
 }
 
-.sidebar.active .nav_list::-webkit-scrollbar-thumb:hover {
+.sidebar.active ul::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.sidebar .nav_list {
+.sidebar ul {
+  margin-top: 25px;
   padding-left: 0px;
 }
 
-.sidebar .nav_list li {
+.sidebar ul li {
   position: relative;
   height: 50px;
   width: 100%;
-  margin: 3px 3px;
+  margin: 3px 2px;
   list-style: none;
   line-height: 50px;
 }
 
-.sidebar .nav_list li .tooltip {
+.sidebar ul li .tooltip {
   position: absolute;
   left: 125px;
   top: 0;
@@ -127,17 +129,23 @@ body {
   display: block;
 }
 
-.sidebar.active .nav_list li .tooltip {
+.sidebar.active ul li .tooltip {
   display: none;
 }
 
-.sidebar .nav_list li:hover .tooltip {
+.sidebar ul li:hover .tooltip {
   transition: all 0.5s ease;
   opacity: 1;
   top: 50%;
 }
 
-.sidebar .nav_list li input {
+.sidebar ul li input {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s, opacity 0.8s linear;
+}
+
+.sidebar.active ul li input {
   position: absolute;
   height: 100%;
   width: 100%;
@@ -150,9 +158,11 @@ body {
   padding-left: 50px;
   font-size: 18px;
   color: #fff;
+  visibility: visible;
+  opacity: 1;
 }
 
-.sidebar .nav_list li .bx-search {
+.sidebar ul li .bx-search {
   position: absolute;
   z-index: 99;
   color: #fff;
@@ -160,12 +170,17 @@ body {
   transition: all 0.5 ease;
 }
 
-.sidebar .nav_list li .bx-search:hover {
+.sidebar ul li .bx-search:hover {
   background: #fff;
   color: #1d1b31;
 }
 
-.sidebar .nav_list li a {
+.sidebar.active ul li .bx-search:hover {
+  background: transparent;
+  color: white;
+}
+
+.sidebar ul li a {
   color: #fff;
   display: flex;
   align-items: center;
@@ -175,12 +190,12 @@ body {
   white-space: nowrap;
 }
 
-.sidebar .nav_list li a:hover {
+.sidebar ul li a:hover {
   color: #11101d;
   background: #fff;
 }
 
-.sidebar .nav_list li i {
+.sidebar ul li i {
   height: 50px;
   min-width: 50px;
   border-radius: 12px;

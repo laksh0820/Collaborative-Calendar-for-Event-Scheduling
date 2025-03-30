@@ -24,18 +24,117 @@ body {
 }
 
 #calendar {
-    max-width: 900px;
+    max-width: 1050px;
     margin: auto auto;
     padding: 30px 15px;
-    background: white;
+    background: rgb(255, 255, 255);
     border-radius: 1%;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-}
-
-.fc {
-    font-size: 14px;
 }
 
 .container {
    padding-bottom: 15px;
 }
+
+/* 
+   General Calendar Layout
+------------------------------------------------------------ */
+.fc {
+    /* You can add a subtle background or a box-shadow around the calendar container */
+    background-color: #fcefef;
+    font-size: 14px;
+    border-radius: 0.25rem;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 
+     Toolbar (header) styles
+  ------------------------------------------------------------ */
+  .fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: #ddeaf7; /* Light grey from Bootstrap */
+    border-radius: 0.25rem;
+    border: 1px solid #047df5;
+  }
+  
+  /* Adjust the title text (month/year) */
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  /* 
+     Buttons (Next, Previous, Today)
+     Note: If using themeSystem: 'bootstrap5', you can rely on .btn classes, 
+     but you can still customize them further as shown here.
+  ------------------------------------------------------------ */
+  .fc .fc-button {
+    background-color: #0d6efd; /* Bootstrap primary color */
+    color: #fff;
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    transition: background-color 0.15s ease-in-out;
+  }
+  
+  /* Button hover state */
+  .fc .fc-button:hover,
+  .fc .fc-button:focus {
+    background-color: #0b5ed7; /* Slightly darker primary */
+    color: #fff;
+  }
+  
+  /* 
+     Day Grid
+  ------------------------------------------------------------ */
+  /* The day numbers (e.g., 1, 2, 3...) in month view */
+  .fc .fc-daygrid-day-number {
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  /* Add borders between days to clearly separate them */
+  .fc .fc-daygrid-day-frame,
+  .fc .fc-view {
+    border: 1px solid #1d93dd;
+  }
+  
+  /* 
+     Events
+  ------------------------------------------------------------ */
+  /* Event container in the day cells */
+  .fc .fc-daygrid-event {
+    background-color: #20c997; /* Bootstrap “success”-ish color */
+    color: #fff;
+    border: none;
+    border-radius: 0.25rem;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+    transition: background-color 0.15s ease-in-out;
+  }
+  
+  /* Event hover effect */
+  .fc .fc-daygrid-event:hover {
+    background-color: #17a589; /* Slightly darker green */
+  }
+  
+  /* 
+     Popover (if you use event popovers on smaller screens)
+  ------------------------------------------------------------ */
+  .fc .fc-popover {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+  }
+  
+  /* Optional: style the popover header/footer if they appear */
+  .fc .fc-popover-header,
+  .fc .fc-popover-footer {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    font-weight: 500;
+  }
+  
