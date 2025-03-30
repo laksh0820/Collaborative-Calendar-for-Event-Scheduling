@@ -320,11 +320,13 @@ body {
 
 .navbar-nav li {
   display: inline-block;
+  padding: 0 5px;
 }
 
 .navbar-nav li a:hover {
   color: #fff;
   background: #11101d;
+  text-decoration: none;
 }
 
 .navbar-nav a {
