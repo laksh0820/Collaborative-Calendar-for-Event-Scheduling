@@ -4,9 +4,9 @@ from datetime import timedelta
 import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'
-app.config['SQLALCHEMY_BINDS'] = {'problems':'sqlite:///problem_set.db','submissions':'sqlite:///submissions.db'}   
-app.config['SECRET_KEY'] = 'projectzetaxksdkar37ro8hf83fh3892hmfijw38fh'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///event_management.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False   
+app.config['SECRET_KEY'] = 'eventmanagementksdkar37ro8hf83fh3892hmfijw38fh'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(seconds=20)
 
 db = SQLAlchemy(app)

@@ -12,11 +12,6 @@ login_manager.login_view = 'signin'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
-
-db = SQLAlchemy()
-
 class User(db.Model, UserMixin):
     user_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -26,6 +21,9 @@ class User(db.Model, UserMixin):
     participations = db.relationship('Participate', backref='user', lazy=True)
     memberships = db.relationship('Member', backref='user', lazy=True)
     created_events = db.relationship('Event', backref='event_creator', lazy=True)
+    
+    def get_id(self):
+        return self.user_id
 
 class Event(db.Model):
     event_id = db.Column(db.Integer, primary_key=True)

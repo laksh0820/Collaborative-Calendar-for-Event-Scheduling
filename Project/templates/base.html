@@ -90,6 +90,7 @@
             <span class="tooltip">Settings</span>
           </li>
         </ul>
+        {% if current_user.is_authenticated %}
         <div class="profile_content">
           <div class="profile">
             <div class="profile_details">
@@ -98,17 +99,17 @@
                 alt=""
               />
               <div class="name_job">
-                <div class="name">William Roger</div>
-                <div class="job">Software Developer</div>
+                <div class="name">{{ current_user.name }}</div>
               </div>
             </div>
-            <form action="{{ url_for('get_calendar') }}" method="GET">
+            <form action="{{ url_for('signout') }}" method="GET">
               <button style="color: #eee;">
                 <i class="bx bx-log-out" id="log_out"></i>
               </button>
             </form>
           </div>
         </div>
+        {% endif %}
     </div>
     
     <div class="home_content">

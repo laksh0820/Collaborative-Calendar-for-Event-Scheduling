@@ -1,4 +1,4 @@
-from flask import Flask,flash
+from flask import Flask,flash,redirect,url_for
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import login_user,login_required,current_user,logout_user
 from Project.forms import SignInForm,SignUpForm,GroupForm
@@ -18,12 +18,12 @@ def signin():
         if user:
             if check_password_hash(user.password,str(form.password.data)):
                 login_user(user,remember=form.remember_me.data)
-                flash("Logged in Successfully")
+                flash("Logged in Successfully",'success')
                 return render_template('base.html')
             else:
-                flash("Wrong Password! Try Again",'error')
+                flash("Wrong Password! Try Again",'danger')
         else:
-            flash("User not Found! Try Again",'error')
+            flash("User not Found! Try Again",'danger')
     return render_template('signin.html',form=form,current_user=current_user)
 
 # To create a new user
@@ -42,7 +42,7 @@ def signup():
                 db.session.add(newUser)
                 db.session.commit()
                 login_user(newUser, remember=False)
-                flash("User Added Successfully")
+                flash("User Added Successfully",'success')
             except:
                 return "Unable to enter User to the Database"
             form.name.data = ''
@@ -51,9 +51,17 @@ def signup():
             form.confirm_password.data = ''
             return render_template('base.html')
         else:
-            flash('This email already exits. Please sign in','error')
+            flash('This email already exits. Please sign in','danger')
             return render_template('signup.html',form=form)
     return render_template('signup.html',form = form)
+
+# Signout of a user account
+@app.route('/signout',methods=['GET','POST'])
+@login_required
+def signout():
+    logout_user()
+    flash("Logged out Successfully",'success')
+    return redirect(url_for('signin'))
 
 # Define the path to the events.json file
 EVENTS_FILE = os.path.join(os.path.dirname(__file__), 'events.json')

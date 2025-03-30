@@ -9,40 +9,27 @@
 {% endblock %}
 
 {% block content %}
-        {% for message in get_flashed_messages(with_categories = True) %}
-                {% if message|first == "error" %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                {{ message[1] }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                {% else %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                {{ message[1] }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                {% endif %}
-        {% endfor %}
-
-        {% if form.errors %}
-                {% if form.errors|first == "email" %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                {{ form.errors.email|first }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                {% endif %}
-
-                {% if form.errors|first == "password" %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                {{ form.errors.password|first }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                {% endif %}
-        {% endif %}
-
         <br/>
         <div class="container mt-5">
+                {% include 'flashes.html'%}
 
-            <form action='/signup' method="POST" class="shadow p-3 mb-5 bg-body rounded">
+                {% if form.errors %}
+                        {% if form.errors|first == "email" %}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
+                                        {{ form.errors.email|first }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                        {% endif %}
+
+                        {% if form.errors|first == "password" %}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
+                                        {{ form.errors.password|first }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                        {% endif %}
+                {% endif %}
+
+                <form action='/signup' method="POST" class="shadow p-3 mb-5 bg-body rounded">
                     <legend>Sign Up</legend>
                     {{ form.hidden_tag() }}
     
@@ -76,7 +63,7 @@
                     
                     {{ form.submit(class="btn btn-secondary" , id="submit_tab") }}
     
-            </form>
+                </form>
         </div>
 
         <script>
