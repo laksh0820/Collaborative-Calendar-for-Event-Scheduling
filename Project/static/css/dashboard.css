@@ -16,6 +16,8 @@ body {
   position: relative;
   height: 100vh;
   width: 100%;
+  background: linear-gradient(#F1F3FF, #CBD4FF);
+  overflow-y:hidden;
 }
 
 .sidebar {
@@ -26,7 +28,7 @@ body {
   width: 78px;
   background: #11101d;
   padding: 6px 14px;
-  transition: all 0.5 ease;
+  transition: all 0.5s ease;
 }
 
 .sidebar.active {
@@ -270,12 +272,28 @@ body {
   background: none;
 }
 
+/* Dropdown styles */
+.sidebar .group-dropdown-menu {
+  display: none;
+  margin-top: 0px !important;
+  margin-left: 5px !important;
+  margin-right: 5px !important;
+  height: 150px !important;
+  padding-bottom: 0px !important;
+}
+
+.sidebar .group-dropdown-menu li a {
+  padding-left: 40px !important;
+}
+
 .home_content {
   position: absolute;
   height: 100%;
   width: calc(100% - 78px);
   left: 78px;
+  overflow-y: auto;
   transition: all 0.5s ease;
+  background: linear-gradient(#F1F3FF, #CBD4FF);
 }
 
 .home_content .text {
@@ -292,7 +310,6 @@ body {
 
 /* Navbar Styles */
 .navbar {
-  background-color: white;
   color: #11101d;
   padding: 10px 20px;
   display: flex;
@@ -347,4 +364,9 @@ body {
 /* Content Styles */
 .content {
   padding: 20px;
+}
+
+/* Forms styles */
+form {
+  background: white;
 }

@@ -42,13 +42,42 @@
             </a>
             <span class="tooltip">Dashboard</span>
           </li>
-          <li>
-            <a href="#">
-              <i class="bx bx-user"></i>
-              <span class="links_name">User</span>
-            </a>
-            <span class="tooltip">User</span>
-          </li>
+          {% if current_user.is_authenticated %}
+            <li>
+              <a href="#" class="group-dropdown-toggle">
+                  <i class="bx bx-group"></i>
+                  <span class="links_name">Groups</span>
+              </a>
+              <span class="tooltip">Groups</span>
+            </li>
+            <ul class="group-dropdown-menu">
+                <li>
+                  <a href="#">
+                    <span class="links_name">Group 1</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <span class="links_name">Group 2</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <span class="links_name">Group 3</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <span class="links_name">Group 4</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#">
+                    <span class="links_name">Group 5</span>
+                  </a>
+                </li>
+            </ul>
+          {% endif %}
           <li>
             <a href="#">
               <i class="bx bx-chat"></i>
