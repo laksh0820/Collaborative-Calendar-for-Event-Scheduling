@@ -7,17 +7,15 @@
   box-sizing: border-box;
 }
 
-body,
-html {
+body {
   font-family: 'Poppins', sans-serif !important;
+  height: 130vh;
+  background: linear-gradient(#fafafc, #a0aef8);
 }
 
-body {
+.container {
   position: relative;
-  height: 100vh;
   width: 100%;
-  background: linear-gradient(#F1F3FF, #CBD4FF);
-  overflow-y:hidden;
 }
 
 .sidebar {
@@ -77,7 +75,7 @@ body {
   left: 90%;
 }
 
-.sidebar.active ul {
+.sidebar.active .nav_list {
   margin-top: 20px;
   height: calc(100% - 140px);
   overflow-y: auto;
@@ -85,36 +83,40 @@ body {
   padding-bottom: 20px;
 }
 
-.sidebar.active ul::-webkit-scrollbar {
+.sidebar.active .nav_list::-webkit-scrollbar {
   width: 6px;
 }
 
-.sidebar.active ul::-webkit-scrollbar-thumb {
+.sidebar.active .nav_list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
 }
 
-.sidebar.active ul::-webkit-scrollbar-thumb:hover {
+.sidebar.active .nav_list::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.sidebar ul li {
+.sidebar .nav_list {
+  padding-left: 0px;
+}
+
+.sidebar .nav_list li {
   position: relative;
   height: 50px;
   width: 100%;
-  margin: 0 5px;
+  margin: 3px 3px;
   list-style: none;
   line-height: 50px;
 }
 
-.sidebar ul li .tooltip {
+.sidebar .nav_list li .tooltip {
   position: absolute;
-  left: 122px;
+  left: 125px;
   top: 0;
   transform: translate(-50%, -50%);
   border-radius: 6px;
   height: 35px;
-  width: 122px;
+  width: 125px;
   background: #fff;
   line-height: 35px;
   text-align: center;
@@ -125,17 +127,17 @@ body {
   display: block;
 }
 
-.sidebar.active ul li .tooltip {
+.sidebar.active .nav_list li .tooltip {
   display: none;
 }
 
-.sidebar ul li:hover .tooltip {
+.sidebar .nav_list li:hover .tooltip {
   transition: all 0.5s ease;
   opacity: 1;
   top: 50%;
 }
 
-.sidebar ul li input {
+.sidebar .nav_list li input {
   position: absolute;
   height: 100%;
   width: 100%;
@@ -150,7 +152,7 @@ body {
   color: #fff;
 }
 
-.sidebar ul li .bx-search {
+.sidebar .nav_list li .bx-search {
   position: absolute;
   z-index: 99;
   color: #fff;
@@ -158,12 +160,12 @@ body {
   transition: all 0.5 ease;
 }
 
-.sidebar ul li .bx-search:hover {
+.sidebar .nav_list li .bx-search:hover {
   background: #fff;
   color: #1d1b31;
 }
 
-.sidebar ul li a {
+.sidebar .nav_list li a {
   color: #fff;
   display: flex;
   align-items: center;
@@ -173,12 +175,12 @@ body {
   white-space: nowrap;
 }
 
-.sidebar ul li a:hover {
+.sidebar .nav_list li a:hover {
   color: #11101d;
   background: #fff;
 }
 
-.sidebar ul li i {
+.sidebar .nav_list li i {
   height: 50px;
   min-width: 50px;
   border-radius: 12px;
@@ -189,7 +191,9 @@ body {
 .sidebar .links_name {
   opacity: 0;
   pointer-events: none;
-  transition: all 0.5s ease;
+  transition: opacity 0.3s ease 0.2s;
+  margin-left: 10px;
+  white-space: nowrap;
 }
 
 .sidebar.active .links_name {
@@ -291,7 +295,6 @@ body {
   height: 100%;
   width: calc(100% - 78px);
   left: 78px;
-  overflow-y: auto;
   transition: all 0.5s ease;
 }
 
