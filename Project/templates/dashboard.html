@@ -1,9 +1,35 @@
 {% extends 'base.html' %}
 
-{% block content %}
-    <a href="{{ url_for('create_group') }}">Create Group</a>
+{% block extra_header %}
+{% endblock %}
 
-    {% if createGroup %}
-    <p>Clicked</p>
-    {% endif %}
+{% block content %}
+    <div class="container mt-5">
+        <a href="{{ url_for('create_group') }}">Create Group</a>
+
+        {% if createGroup %}
+        <form action="{{ url_for('create_group') }}" method="POST" class="shadow p-3 mb-5 bg-body rounded">
+            <legend>Create Group</legend>
+            
+            {{ form.hidden_tag() }}
+
+            {{ form.name.label(class='form-label') }}
+            {{ form.name(class="form-control",placeholder="Group name") }}
+            <br/>
+
+            {{ form.description.label(class='form-label') }}
+            {{ form.description(class="form-control") }}
+            <br>
+
+            <select>
+                {% for choics in form.participants %}
+                    <option>{{ choice }}</option>
+                {% endfor %}
+            </select>
+            <br>    
+            
+            {{ form.submit(class="btn btn-secondary", id="submit_tab")}}
+        </form>
+        {% endif %}
+    </div>
 {% endblock %}

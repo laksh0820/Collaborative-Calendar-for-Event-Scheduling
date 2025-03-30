@@ -73,6 +73,13 @@ def dashboard():
 @login_required
 def create_group():
     form = GroupForm()
+    
+    # Query all users to populate the drop-down
+    all_users = User.query.order_by(User.name).all()
+    
+    # Set the choices for select field
+    form.participants.choices = [(user.name) for user in all_users]
+    
     if form.validate_on_submit():
         pass
     return render_template('dashboard.html',form=form,createGroup=True)

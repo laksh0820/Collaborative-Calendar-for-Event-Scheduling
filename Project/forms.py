@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField,TextAreaField,BooleanField
+from wtforms import StringField, PasswordField, SubmitField,TextAreaField,BooleanField,SelectMultipleField
 from wtforms.validators import DataRequired,EqualTo,Email,Length,Regexp,Optional
 
 MIN_PASSWORD_LEN = 8
@@ -31,4 +31,9 @@ class SignInForm(FlaskForm):
 class GroupForm(FlaskForm):
     name = StringField('Group Name', validators=[DataRequired(), Length(max=200)])
     description = TextAreaField('Description', validators=[Optional(), Length(max=1000)])
+    participants = SelectMultipleField(
+        'Select Participants',
+        coerce=int,
+        validators=[DataRequired()]
+    )
     submit = SubmitField('Save')
