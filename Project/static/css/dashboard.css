@@ -292,17 +292,22 @@ body {
 
 /* Navbar Styles */
 .navbar {
-  background-color: #11101d;
-  color: white;
+  background-color: white;
+  color: #11101d;
   padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-top: 0.5rem;
+  padding-right: 1rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
 }
 
 .navbar-brand {
   font-size: 1.5em !important;
   font-weight: bold !important;
+  margin-left: 100px;
 }
 
 .navbar-nav {
@@ -318,12 +323,12 @@ body {
 }
 
 .navbar-nav li a:hover {
-  color: #11101d;
-  background: #fff;
+  color: #fff;
+  background: #11101d;
 }
 
 .navbar-nav a {
-  color: #fff;
+  color: #11101d;
   display: flex;
   padding: 10px 25px;
   align-items: center;

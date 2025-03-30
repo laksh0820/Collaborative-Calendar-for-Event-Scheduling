@@ -10,6 +10,8 @@
     {% endblock %}
 </head>
 <body>
+    {% include 'navbar.html' %}
+
     <div class="sidebar">
         <div class="logo_content">
           <div class="logo">
@@ -113,14 +115,10 @@
     </div>
     
     <div class="home_content">
-      {% include 'navbar.html' %}
       {% block content %}
       {% endblock %}
     </div>
     
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    <script>
-
-    </script>
 </body>
 </html>
