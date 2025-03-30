@@ -6,7 +6,14 @@ document.addEventListener('DOMContentLoaded', function () {
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
+      },
+      buttonText: {
+        today: 'Today',
+        month: 'Month',
+        week: 'Week',
+        day: 'Day',
+        list: 'List'
       },
       weekNumbers: true,
       dayMaxEvents: true,
