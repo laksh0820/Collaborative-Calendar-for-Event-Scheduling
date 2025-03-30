@@ -138,11 +138,9 @@
                 <div class="name">{{ current_user.name }}</div>
               </div>
             </div>
-            <form action="{{ url_for('signout') }}" method="GET">
-              <button style="color: #eee;">
-                <i class="bx bx-log-out" id="log_out"></i>
-              </button>
-            </form>
+            <a href="{{ url_for('signout') }}" style="color: white;">
+              <i class="bx bx-log-out" id="log_out"></i>
+            </a>
           </div>
         </div>
         {% endif %}
