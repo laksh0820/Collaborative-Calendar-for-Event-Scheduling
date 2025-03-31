@@ -11,10 +11,3 @@ btn.addEventListener('click', () => {
 searchBtn.addEventListener('click', () => {
   sidebar.classList.toggle('active');
 });
-
-groupdropdownToggles.addEventListener('click', () => {
-  if (groupdropdownmenu.style.display === "block")
-    groupdropdownmenu.style.display = "none";
-  else 
-    groupdropdownmenu.style.display = "block";
-});

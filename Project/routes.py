@@ -10,7 +10,7 @@ import json
 import os
 
 @app.route('/')
-def base():
+def base():        
     return render_template("base.html")
 
 # To signin an existing user
@@ -91,21 +91,34 @@ def create_group():
 @app.route('/calendar')
 @login_required
 def get_calendar():
-    return render_template('calendar.html')
+    groups = (
+        db.session.query()
+        .select_from(Group)
+        .join(Member, Group.group_id == Member.group_id)
+        .join(User, User.user_id == Member.user_id)
+        .filter(User.user_id == current_user.user_id)
+        .add_columns(Group.group_id,Group.group_name)
+        .all()
+    )
+        
+    return render_template('calendar.html',groups=groups)
 
-@app.route('/data')
+@app.route('/data/<group_id>')
 @login_required
-def return_data():
-    # Get all the events from the database created by current user
-    events = current_user.created_events
+def return_data(group_id):
+    if group_id == 1:
+        # Get all the events from the database created by current user
+        events = current_user.created_events
+    else:
+        # Get all the events for the group
+        events = Group.query.filter_by(group_id=group_id).first().events
+    
     eventsData = [{
-            'title': event.event_name,
-            'description': event.description,
-            'start': event.start_time.isoformat(), 
-            'end': event.end_time.isoformat(),
-            'className':event.color,
-            'icon':event.icon
-        } for event in events]
+                'title': event.event_name,
+                'description': event.description,
+                'start': event.start_time.isoformat(), 
+                'end': event.end_time.isoformat(),
+            } for event in events]
     return jsonify(eventsData)
 
 @app.route('/add_event',methods=['POST'])
@@ -118,11 +131,9 @@ def add_event():
     newEvent.description = event['description']
     newEvent.start_time = datetime.fromisoformat(event['start'])
     newEvent.end_time = datetime.fromisoformat(event['end'])
-    newEvent.color = event['color']
-    newEvent.icon = event['icon']
     newEvent.version_number = 0
     newEvent.creator = current_user.user_id
-    newEvent.group_id = 1
+    newEvent.group_id = event['group_id']
     
     # To see whether a Group 1 exits (to validate foreign key)
     group = Group.query.filter_by(group_id=1).first()
