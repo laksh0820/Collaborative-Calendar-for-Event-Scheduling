@@ -86,6 +86,7 @@ body {
 
 .sidebar.active ul::-webkit-scrollbar {
   width: 6px;
+  display: none;
 }
 
 .sidebar.active ul::-webkit-scrollbar-thumb {
