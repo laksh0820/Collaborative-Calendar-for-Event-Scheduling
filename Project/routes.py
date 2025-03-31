@@ -102,7 +102,9 @@ def return_data():
             'title': event.event_name,
             'description': event.description,
             'start': event.start_time.isoformat(), 
-            'end': event.end_time.isoformat()
+            'end': event.end_time.isoformat(),
+            'className':event.color,
+            'icon':event.icon
         } for event in events]
     return jsonify(eventsData)
 
@@ -116,6 +118,8 @@ def add_event():
     newEvent.description = event['description']
     newEvent.start_time = datetime.fromisoformat(event['start'])
     newEvent.end_time = datetime.fromisoformat(event['end'])
+    newEvent.color = event['color']
+    newEvent.icon = event['icon']
     newEvent.version_number = 0
     newEvent.creator = current_user.user_id
     newEvent.group_id = 1

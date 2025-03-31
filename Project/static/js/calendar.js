@@ -30,20 +30,21 @@ document.addEventListener('DOMContentLoaded', function () {
       events: '/data', // Fetch events from server
       eventClick: function(info) {
         // Modal approach
-        const modal = new bootstrap.Modal('#eventDetailModal');
-        document.getElementById('modalEventTitle').innerText = info.event.title;
-        document.getElementById('modalEventStartDate').innerText = info.event.start.toISOString().replace('T',' ').substring(0,16);
-        document.getElementById('modalEventEndDate').innerText = info.event.end.toISOString().replace('T',' ').substring(0,16);
-        document.getElementById('modalEventDescription').innerText = 
-          info.event.extendedProps?.description || 'No description';
+        const modal = new bootstrap.Modal('#modal-view-event');
+        $('.event-icon').html("<i class='fa fa-"+info.event.icon+"'></i>");
+        $('.event-title').html(info.event.title);
+        // $('.event-start').html(info.event.start.toISOString().replace('T',' ').substring(0,16));
+        // $('.event-end').html(info.event.end.toISOString().replace('T',' ').substring(0,16));
+        $('.event-body').html(
+          info.event.extendedProps?.description || 'No description'
+        );
         modal.show();
         info.jsEvent.preventDefault();
-      
       },  
       selectable: true, // Enable date/time selection
       select: function(arg) {
           // Open the modal when a time range is selected
-          $('#eventModal').modal('show');
+          $('#modal-view-event-add').modal('show');
 
           // Set the start and end times in the form
           $('#eventStart').val(arg.startStr);
@@ -60,8 +61,10 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#saveEvent').on('click', function() {
       var eventTitle = $('#eventTitle').val();
       var eventStart = $('#eventStart').val();
-      var description = $('#message-text').val();
+      var description = $('#eventDescription').val();
       var eventEnd = $('#eventEnd').val();
+      var eventColor = $('#eventColor').val();
+      var eventIcon = $('#eventIcon').val();
 
       $.ajax({
         url: '/add_event',
@@ -71,16 +74,20 @@ document.addEventListener('DOMContentLoaded', function () {
           title: eventTitle,
           description: description,
           start: eventStart,
-          end: eventEnd
+          end: eventEnd,
+          color: eventColor,
+          icon: eventIcon
         }),
         success: function(response) {
           calendar.addEvent({ // Add event to calendar
             title: eventTitle,
             start: eventStart,
             description: description,
-            end: eventEnd
+            end: eventEnd,
+            className: eventColor,
+            icon: eventIcon
           });
-          $('#eventModal').modal('hide');
+          $('#modal-view-event-add').modal('hide');
           alert("Event added successfully");
         },
         error: function() {

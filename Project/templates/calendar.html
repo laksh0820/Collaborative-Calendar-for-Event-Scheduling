@@ -12,8 +12,14 @@
 {% endblock %}
 
 {% block content %}
-	<div class="container mt-4">
-		<div id="calendar"></div>
+	<!-- Bootstrap Modal -->
+	<div class="p-5">
+		<h2 class="mb-4">Calendar</h2>
+		<div class="card">
+		  <div class="card-body p-0">
+			<div id="calendar"></div>
+		  </div>
+		</div>
 	</div>
 
 	<div id='script-warning'>
@@ -21,62 +27,74 @@
 	</div>
 
 	<div id='loading'>loading...</div>
-
-	<!-- Bootstrap Modal -->
-	<div class="modal fade" id="eventModal" tabindex="-1" role="dialog" aria-labelledby="eventModalLabel" aria-hidden="true">
-		<div class="modal-dialog" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="eventModalLabel">Add Event</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">	</button>
+	  
+	<!-- calendar modal -->
+	<div id="modal-view-event" class="modal modal-top fade calendar-modal">
+		<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body">
+						<h4 class="modal-title"><span class="event-icon"></span><span class="event-title"></span></h4>
+						<div class="event-body"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+					</div>
 				</div>
-				<div class="modal-body">
-					<form id="eventForm">
-						<div class="form-group">
-							<label for="eventTitle">Event Title</label>
-							<input type="text" class="form-control" id="eventTitle" required>
-						</div>
-						<div class="mb-3">
-							<label for="message-text" class="col-form-label">Event Description</label>
-							<textarea class="form-control" id="message-text"></textarea>
-						  </div>
-						<div class="form-group">
-							<label for="eventStart">Start Time</label>
-							<input type="datetime-local" class="form-control" id="eventStart" required>
-						</div>
-						<div class="form-group">
-							<label for="eventEnd">End Time</label>
-							<input type="datetime-local" class="form-control" id="eventEnd" required>
-						</div>
-					</form>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-primary" id="saveEvent">Save Event</button>
-				</div>
-			</div>
 		</div>
 	</div>
-
-	<div class="modal fade" id="eventDetailModal" tabindex="-1">
-		<div class="modal-dialog">
-		  <div class="modal-content">
-			<div class="modal-header">
-			  <h5 class="modal-title" id="modalEventTitle"></h5>
-			  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-			</div>
+	  
+	<div id="modal-view-event-add" class="modal modal-top fade calendar-modal">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+		<form id="add-event">
 			<div class="modal-body">
-			  <p><strong>Start:</strong> <span id="modalEventStartDate"></span></p>
-			  <p><strong>End:</strong> <span id="modalEventEndDate"></span></p>
-			  <p><strong>Description:</strong></p>
-			  <p id="modalEventDescription"></p>
+			<h4>Add Event Detail</h4>        
+			<div class="form-group">
+				<label>Event name</label>
+				<input type="text" class="form-control" name="ename" id="eventTitle">
 			</div>
+			<div class="form-group">
+				<label>Start Date</label>
+				<input type="datetime-local" class="form-control" name="edate" id="eventStart">
+			</div>    
+			<div class="form-group">
+				<label>End Date</label>
+				<input type="datetime-local" class="form-control" name="edate" id="eventEnd">
+			</div>        
+			<div class="form-group">
+				<label>Event Description</label>
+				<textarea class="form-control" name="edesc" id="eventDescription"></textarea>
+			</div>
+			<div class="form-group">
+				<label>Event Color</label>
+				<select class="form-control" name="ecolor" id='eventColor'>
+				<option value="fc-bg-default">fc-bg-default</option>
+				<option value="fc-bg-blue">fc-bg-blue</option>
+				<option value="fc-bg-lightgreen">fc-bg-lightgreen</option>
+				<option value="fc-bg-pinkred">fc-bg-pinkred</option>
+				<option value="fc-bg-deepskyblue">fc-bg-deepskyblue</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label>Event Icon</label>
+				<select class="form-control" name="eicon" id='eventIcon'>
+				<option value="circle">circle</option>
+				<option value="cog">cog</option>
+				<option value="group">group</option>
+				<option value="suitcase">suitcase</option>
+				<option value="calendar">calendar</option>
+				</select>
+			</div>        
+		</div>
 			<div class="modal-footer">
-			  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-			</div>
-		  </div>
+			<button type="submit" class="btn btn-primary" id="saveEvent">Save</button>
+			<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>        
+		</div>
+		</form>
 		</div>
 	</div>
+	</div>
+	
 
 	<script src="{{ url_for ('static',filename='js/calendar.js') }}"></script>
 {% endblock %}

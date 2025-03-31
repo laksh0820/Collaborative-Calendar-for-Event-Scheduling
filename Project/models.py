@@ -33,6 +33,8 @@ class Event(db.Model):
     event_name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(1000))
     version_number = db.Column(db.Integer, nullable=False)
+    color = db.Column(db.String(100), nullable=False)
+    icon = db.Column(db.String(100), nullable=False)
     creator = db.Column(db.Integer, db.ForeignKey('user.user_id'))
     group_id = db.Column(db.Integer, db.ForeignKey('group.group_id'))
     
