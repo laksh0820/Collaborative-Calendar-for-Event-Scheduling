@@ -114,7 +114,7 @@ body {
 
 .sidebar ul li .tooltip {
   position: absolute;
-  left: 125px;
+  left: 130px;
   top: 0;
   transform: translate(-50%, -50%);
   border-radius: 6px;
