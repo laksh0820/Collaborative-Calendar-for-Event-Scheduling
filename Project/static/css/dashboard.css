@@ -86,6 +86,7 @@ body {
 
 .sidebar.active ul::-webkit-scrollbar {
   width: 6px;
+  display: none;
 }
 
 .sidebar.active ul::-webkit-scrollbar-thumb {
@@ -113,7 +114,7 @@ body {
 
 .sidebar ul li .tooltip {
   position: absolute;
-  left: 125px;
+  left: 130px;
   top: 0;
   transform: translate(-50%, -50%);
   border-radius: 6px;
