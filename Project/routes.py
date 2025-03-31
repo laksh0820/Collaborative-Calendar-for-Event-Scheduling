@@ -1,12 +1,17 @@
-from flask import Flask,flash,redirect,url_for
+from flask import flash,redirect,url_for
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import login_user,login_required,current_user,logout_user
 from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
 from Project import app,db
+from datetime import datetime
 import json
 import os
+
+@app.route('/')
+def base():
+    return render_template("base.html")
 
 # To signin an existing user
 @app.route('/signin', methods=['GET','POST'])
@@ -68,7 +73,6 @@ def signout():
 def dashboard():
     return render_template("dashboard.html")
 
-
 @app.route('/create_group')
 @login_required
 def create_group():
@@ -84,40 +88,57 @@ def create_group():
         pass
     return render_template('dashboard.html',form=form,createGroup=True)
 
-# Define the path to the events.json file
-EVENTS_FILE = os.path.join(os.path.dirname(__file__), 'events.json')
-
-@app.route('/')
-def base():
-    return render_template("base.html")
-
-
 @app.route('/calendar')
+@login_required
 def get_calendar():
     return render_template('calendar.html')
 
 @app.route('/data')
+@login_required
 def return_data():
-    start_date = request.args.get('start', '')
-    end_date = request.args.get('end', '')
-
-    with open(EVENTS_FILE, "r") as input_data:
-        return input_data.read()
-    
-# Load existing events from the file (if it exists)
-def load_events():
-    with open(EVENTS_FILE, 'r') as file:
-        return json.load(file)
-    
-# Save events to the file
-def save_events(events):
-    with open(EVENTS_FILE, 'w') as file:
-        json.dump(events, file, indent=4)
+    # Get all the events from the database created by current user
+    events = current_user.created_events
+    eventsData = [{
+            'title': event.event_name,
+            'description': event.description,
+            'start': event.start_time.isoformat(), 
+            'end': event.end_time.isoformat()
+        } for event in events]
+    return jsonify(eventsData)
 
 @app.route('/add_event',methods=['POST'])
+@login_required
 def add_event():
-    new_event = request.get_json()
-    events = load_events()
-    events.append(new_event)
-    save_events(events)
+    event = request.get_json()
+     
+    newEvent = Event()
+    newEvent.event_name = event['title']
+    newEvent.description = event['description']
+    newEvent.start_time = datetime.fromisoformat(event['start'])
+    newEvent.end_time = datetime.fromisoformat(event['end'])
+    newEvent.version_number = 0
+    newEvent.creator = current_user.user_id
+    newEvent.group_id = 1
+    
+    # To see whether a Group 1 exits (to validate foreign key)
+    group = Group.query.filter_by(group_id=1).first()
+    
+    if group is None:
+        newGroup = Group()
+        newGroup.group_name = 'No Group'
+        newGroup.description = 'No Description'
+        newGroup.version_number = 0
+        
+        try:
+            db.session.add(newGroup)
+            db.session.commit()
+        except:
+            return "Unable to add event to the database"
+   
+    try:
+        db.session.add(newEvent)
+        db.session.commit()
+    except:
+        return "Unable to add event to the database"
+    
     return jsonify(success=True)

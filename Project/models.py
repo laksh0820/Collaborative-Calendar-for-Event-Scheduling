@@ -3,6 +3,7 @@ from flask_admin import Admin,AdminIndexView
 from flask import redirect,url_for,flash
 from flask_login import UserMixin,LoginManager,current_user
 from flask_admin.contrib.sqla import ModelView
+from sqlalchemy import inspect
 
 login_manager = LoginManager()
 login_manager.init_app(app)
