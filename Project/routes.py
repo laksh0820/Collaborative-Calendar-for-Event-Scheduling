@@ -24,7 +24,7 @@ def signin():
             if check_password_hash(user.password,str(form.password.data)):
                 login_user(user,remember=form.remember_me.data)
                 flash("Logged in Successfully",'success')
-                return render_template('base.html')
+                return render_template('calendar.html')
             else:
                 flash("Wrong Password! Try Again",'danger')
         else:
@@ -56,7 +56,7 @@ def signup():
             form.confirm_password.data = ''
             return render_template('base.html')
         else:
-            flash('This email already exits. Please sign in','danger')
+            flash('This email already exits. \nPlease sign in','danger')
             return render_template('signup.html',form=form)
     return render_template('signup.html',form = form)
 

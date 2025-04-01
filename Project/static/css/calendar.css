@@ -1466,12 +1466,28 @@ body {
     height: 50px;
   }
 
-  .fc-h-event .fc-event-main {
+  .fc-h-event .fc-event-main{
     color: #5d5386;
+    }
+  
+    .fc-v-event .fc-event-main {
+      color: #5d5386;
     }
 
     .fc-event, .fc-event:hover {
         color: #5d5386;
+    }
+
+    .fc-daygrid-event-dot {
+      margin-left: 7px;
+    }
+    
+    .fc-event-title {
+      margin-left: 7px;
+    }
+
+    .fc-event-time {
+      margin-left: 7px;
     }
     
   

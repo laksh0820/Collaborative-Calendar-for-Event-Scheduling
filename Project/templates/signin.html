@@ -7,8 +7,6 @@
 
         <br/>
         <div class="container mt-5">
-                {% include 'flashes.html'%}
-
                 {% if form.errors %}
                         {% if form.errors|first == "email" %}
                                 <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
