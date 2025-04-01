@@ -101,7 +101,8 @@ function create_group() {
         
         participants.forEach(name => {
             const badge = document.createElement('span');
-            badge.className = 'badge bg-primary d-flex align-items-center';
+            badge.className = 'badge d-flex align-items-center';
+            badge.style = 'background:rgb(30, 18, 82);'
             badge.innerHTML = `
                 ${name}
                 <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
