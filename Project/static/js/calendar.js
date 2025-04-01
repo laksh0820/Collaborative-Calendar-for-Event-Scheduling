@@ -29,17 +29,25 @@ function load_calendar (group_id) {
     },
     events: `/data/${group_id}`, // Fetch events from server
     eventClick: function(info) {
+      // Close any currently open Bootstrap modal
+      $('.modal').modal('hide');
+
+      // Close the currently open popover
+      $('.fc-more-popover').remove();
+
+      // Close the currently open tooltip
+      $('.tooltip').remove();
+      
       // Modal approach
       const modal = new bootstrap.Modal('#modal-view-event');
-      $('.event-icon').html("<i class='fa fa-"+info.event.icon+"'></i>");
       $('.event-title').html(info.event.title);
       // $('.event-start').html(info.event.start.toISOString().replace('T',' ').substring(0,16));
       // $('.event-end').html(info.event.end.toISOString().replace('T',' ').substring(0,16));
       $('.event-body').html(
         info.event.extendedProps?.description || 'No description'
       );
-      modal.show();
       info.jsEvent.preventDefault();
+      modal.show();
     },  
     selectable: true, // Enable date/time selection
     select: function(arg) {
