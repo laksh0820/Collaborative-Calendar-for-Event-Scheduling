@@ -119,7 +119,7 @@ function create_group() {
         const description = document.getElementById('groupDescription').value.trim();
         
         if(!groupName) {
-            // alert('Group name is required');
+			// Alert that Group name is required
             return;
         }
         
@@ -138,6 +138,7 @@ function create_group() {
         document.getElementById('createGroupForm').reset();
         participants.length = 0;
 
+		// Display success message
 		$.ajax({
 			url: '/create_group',
 			type: 'GET',
