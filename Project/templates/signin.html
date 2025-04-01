@@ -7,59 +7,39 @@
 
         <br/>
         <div class="container mt-5">
-                {% if form.errors %}
-                        {% if form.errors|first == "email" %}
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                        {{ form.errors.email|first }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                        {% endif %}
+			<form action="/signin" method="POST" class="shadow p-3 mb-5 bg-body rounded">
+				<legend>Sign In</legend>
 
-                        {% if form.errors|first == "password" %}
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                        {{ form.errors.password|first }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                        {% endif %}
-                {% endif %}
+				{{ form.hidden_tag() }}
 
-                <form action="/signin" method="POST" class="shadow p-3 mb-5 bg-body rounded">
-                        <legend>Sign In</legend>
-        
-                        {{ form.hidden_tag() }}
-        
-                        {{ form.email.label(class='form-label') }}
-                        {{ form.email(class="form-control",placeholder="someone@example.com") }}
-                        <br/>
-        
-                        {{ form.password.label(class='form-label') }}
-                        {{ form.password(class="form-control",id="password") }}
-                        <br>
-                        <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" id="togglePassword">
-                                <label class="form-check-label" for="togglePassword">
-                                        <p class="text-success">Show Password</p>
-                                </label>
-                        </div>
-                        {{ form.remember_me.label(class='form-label') }}
-                        {{ form.remember_me() }}
-                        <br/>
-                        
-                        {{ form.submit(class="btn btn-secondary", id="submit_tab")}}
-                </form>
+				{{ form.email.label(class='form-label') }}
+				{{ form.email(class="form-control",placeholder="someone@example.com") }}
+				<br/>
+
+				{{ form.password.label(class='form-label') }}
+				{{ form.password(class="form-control",id="password") }}
+				<br>
+				<div class="form-check">
+						<input class="form-check-input" type="checkbox" value="" id="togglePassword">
+						<label class="form-check-label" for="togglePassword">
+								<p class="text-success">Show Password</p>
+						</label>
+				</div>
+				{{ form.remember_me.label(class='form-label') }}
+				{{ form.remember_me() }}
+				<br/>
+				
+				{{ form.submit(class="btn btn-secondary", id="submit_tab")}}
+			</form>
         </div>
 
         <script>
-                const togglePassword = document.querySelector('#togglePassword');
-                const password = document.querySelector('#password');
-                togglePassword.addEventListener('click', () => {
-                    // Toggle the type attribute using getAttribure() method
-                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                    password.setAttribute('type', type);
-                });
+			const togglePassword = document.querySelector('#togglePassword');
+			const password = document.querySelector('#password');
+			togglePassword.addEventListener('click', () => {
+				// Toggle the type attribute using getAttribure() method
+				const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+				password.setAttribute('type', type);
+			});
         </script>
-
-        {% block extra_newline %}
-        <br/><br/>
-        {% endblock %}
 {% endblock %}
