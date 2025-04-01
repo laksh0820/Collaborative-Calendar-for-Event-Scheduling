@@ -9,8 +9,9 @@
 
 body {
   font-family: 'Poppins', sans-serif !important;
-  height: 190vh;
+  margin: 0;
   background: linear-gradient(#fafafc, #95a7fd);
+  background-attachment: fixed;
 }
 
 .container {
