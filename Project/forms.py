@@ -8,12 +8,12 @@ MAX_PASSWORD_LEN = 12
 class SignUpForm(FlaskForm):
     name = StringField("Name",validators=[DataRequired(), Length(max=200)])
     email = StringField("Email",validators=[DataRequired(),
-                                            Email(message="Invalid email address (should be of the form something@example.com)"),
+                                            Email(message="Invalid email address"),
                                             Length(max=500)])
     password = PasswordField("Password",validators=[DataRequired(),
                                                     Length(min=MIN_PASSWORD_LEN,max=MAX_PASSWORD_LEN),
                                                     EqualTo('confirm_password',
-                                                            message="Password does not match to Confirm Password. Please retype"),
+                                                            message="Passwords don't match"),
                                                     Regexp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]",
                                                           message="Password should contain atleast one lowercase character, one uppercase character,one number and one special character." )])
     confirm_password = PasswordField("Confirm-Password",validators=[DataRequired(),
@@ -22,7 +22,7 @@ class SignUpForm(FlaskForm):
 
 class SignInForm(FlaskForm):
     email = StringField("Email",validators=[DataRequired(),
-                                            Email(message="Invalid email address (should be of the form something@example.com)"),
+                                            Email(message="Invalid email address"),
                                             Length(max=500)])
     password = PasswordField("Password",validators=[DataRequired()])
     remember_me = BooleanField("Remember Me")

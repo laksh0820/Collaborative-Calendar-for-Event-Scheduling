@@ -28,7 +28,7 @@ def signin():
             else:
                 flash("Wrong Password! Try Again",'danger')
         else:
-            flash("User not Found! Try Again",'danger')
+            flash("User Not Found! Try Again",'danger')
     return render_template('signin.html',form=form,current_user=current_user)
 
 # To create a new user
@@ -56,7 +56,7 @@ def signup():
             form.confirm_password.data = ''
             return render_template('base.html')
         else:
-            flash('This email already exits. \nPlease sign in','danger')
+            flash('This email already exits. Please sign in','danger')
             return render_template('signup.html',form=form)
     return render_template('signup.html',form = form)
 
