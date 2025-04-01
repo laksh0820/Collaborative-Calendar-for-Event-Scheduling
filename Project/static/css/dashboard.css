@@ -182,7 +182,7 @@ body {
 }
 
 .sidebar ul li a {
-  color: #fff;
+  color: #fff !important;
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -192,7 +192,7 @@ body {
 }
 
 .sidebar ul li a:hover {
-  color: #11101d;
+  color: #11101d !important;
   background: #fff;
 }
 
