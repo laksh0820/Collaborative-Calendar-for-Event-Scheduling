@@ -142,7 +142,29 @@ function create_group() {
         $.ajax({
             url: '/create_group',
             type: 'GET',
-            contentType: 'application/json'
+            contentType: 'application/json',
+            success: function (response) {
+                // Display the success flash message
+                const flashHTML = `
+                <div class="alert alert-dismissible fade show" role="alert"
+                    style="background-color:white; color:black; padding:10px; margin-right:5px;" id="group-sub-success">
+                    <i class="bx bx-check-circle" style="color:lawngreen;"></i>
+                    Successfully Created Group
+                </div>`;
+                const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+                // Auto-remove after  seconds
+                setTimeout(function () {
+                    const flashElement = document.getElementById('group-sub-success');
+                    flashElement.style.opacity = '0';
+                    setTimeout(function () {
+                        flashElement.remove();
+                    }, 2000);
+                }, 1000);
+            },
+            error: function (response) {
+                alert('Group Form Submission error');
+            }
         });
     }
 }

@@ -71,7 +71,6 @@ def signout():
 @app.route('/create_group')
 @login_required
 def redirect_create_group():
-    flash("Successfully Created Group",'success')
     return jsonify(success=True)
 
 @app.route('/calendar')
