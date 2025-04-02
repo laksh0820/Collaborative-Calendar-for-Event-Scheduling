@@ -1,12 +1,12 @@
 function load_calendar (group_id) {
   var calendarEl = document.getElementById('calendar');
   var calendar = new FullCalendar.Calendar(calendarEl, {
-    timeZone: 'UTC',
+    timeZone: 'local',
     themeSystem: 'bootstrap5',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
     },
     buttonText: {
       today: 'Today',
@@ -48,8 +48,15 @@ function load_calendar (group_id) {
       );
       info.jsEvent.preventDefault();
       modal.show();
-    },  
+    },
+    eventTimeFormat: { // Format the time display
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      meridiem: 'short'
+    },
     selectable: true, // Enable date/time selection
+    nowIndicator: true, // Show a line indicating the current time
     select: function(arg) {
         // Open the modal when a time range is selected
         $('#modal-view-event-add').modal('show');

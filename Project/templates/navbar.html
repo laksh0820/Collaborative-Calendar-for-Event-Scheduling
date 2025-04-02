@@ -1,9 +1,38 @@
- <!-- Navbar -->
+<!-- Navbar -->
 <div class="navbar">
     <div class="navbar-brand">Event Management System</div>
     <ul class="navbar-nav">
         <li><a href="{{ url_for('base') }}">Home</a></li>
         {% if current_user.is_authenticated %}
+        <li class="Notification">
+            <a role="button" data-bs-toggle="popover" data-bs-container="body" data-bs-trigger="focus"
+                data-bs-placement="bottom" data-bs-content="Top popover" id="notificationBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor"
+                    class="bi bi-bell-fill" viewBox="0 0 18 18">
+                    <path
+                        d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2m.995-14.901a1 1 0 1 0-1.99 0A5 5 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901" />
+                </svg>
+                <span class="top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationBadge">
+                    2
+                    <span class="visually-hidden">unread notifications</span>
+                </span>
+            </a>
+            <div class="notification-popover shadow d-none" id="notificationPopover">
+                <h6 class="border-bottom p-3 mb-0">Notifications</h6>
+                <div class="notification-list">
+                    <div class="notification-item unread">
+                        <div class="p-3">
+                            <p class="mb-0">New event created: Summer Festival</p>
+                        </div>
+                    </div>
+                    <div class="notification-item unread">
+                        <div class="p-3">
+                            <p class="mb-0">Event update: Winter Gala location changed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
         <li><a href="{{ url_for('signout') }}">SignOut</a></li>
         {% else %}
         <li><a href="{{ url_for('signup') }}">SignUp</a></li>
@@ -11,3 +40,43 @@
         {% endif %}
     </ul>
 </div>
+
+<script>
+    // Notification System
+    document.addEventListener('DOMContentLoaded', () => {
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationPopover = document.getElementById('notificationPopover');
+        const notificationBadge = document.getElementById('notificationBadge');
+
+        // Toggle notification popover
+        notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationPopover.classList.toggle('d-none');
+        });
+
+        // Close notification popover when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!notificationPopover.contains(e.target) && e.target !== notificationBtn) {
+                notificationPopover.classList.add('d-none');
+            }
+        });
+
+        // Mark notifications as read when clicked
+        const notifications = document.querySelectorAll('.notification-item');
+        notifications.forEach(notification => {
+            notification.addEventListener('click', () => {
+                notification.classList.remove('unread');
+                updateNotificationCount();
+            });
+        });
+
+        // Update notification badge count
+        function updateNotificationCount() {
+            const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+            notificationBadge.textContent = unreadCount;
+            if (unreadCount === 0) {
+                notificationBadge.classList.add('d-none');
+            }
+        }
+    });
+</script>
