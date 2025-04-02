@@ -24,7 +24,7 @@ def signin():
             if check_password_hash(user.password,str(form.password.data)):
                 login_user(user,remember=form.remember_me.data)
                 flash("Logged in Successfully",'success')
-                return render_template('calendar.html')
+                return redirect(url_for('get_calendar'))
             else:
                 flash("Wrong Password! Try Again",'danger')
         else:

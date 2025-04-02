@@ -1,26 +1,28 @@
 {% for message in get_flashed_messages(with_categories = True) %}
-    {% if message %}
-        {% if message[0] == "danger"%}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="color:black; padding:10px; margin-right:5px;">
-            <i class="bx bx-error-circle" style="color:red;"></i>
-            {{ message[1] }}
-        </div>
-        {% else %}
-        <div class="alert alert-dismissible fade show" role="alert" style="background-color:white; color:black; padding:10px; margin-right:5px;">
-            <i class="bx bx-check-circle" style="color:lawngreen;"></i>
-            {{ message[1] }}
-        </div>
-        {% endif %}
-    {% endif %}
+{% if message %}
+{% if message[0] == "danger"%}
+<div class="alert alert-danger alert-dismissible fade show" role="alert"
+    style="color:black; padding:10px; margin-right:5px;">
+    <i class="bx bx-error-circle" style="color:red;"></i>
+    {{ message[1] }}
+</div>
+{% else %}
+<div class="alert alert-dismissible fade show" role="alert"
+    style="background-color:white; color:black; padding:10px; margin-right:5px;">
+    <i class="bx bx-check-circle" style="color:lawngreen;"></i>
+    {{ message[1] }}
+</div>
+{% endif %}
+{% endif %}
 {% endfor %}
 
 <style>
     .alert {
-      opacity: 0.8;
-      z-index: 999; 
-      transition: opacity 1s;
-      position: absolute;
-      right: 0;
+        opacity: 0.8;
+        z-index: 999;
+        transition: opacity 1s;
+        position: absolute;
+        right: 0;
     }
 </style>
 
@@ -28,10 +30,10 @@
     // Function to automatically dismiss alerts after a certain time
     function autoDismissAlerts() {
         var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            setTimeout(function() {
+        alerts.forEach(function (alert) {
+            setTimeout(function () {
                 alert.style.opacity = '0';
-                setTimeout(function() {
+                setTimeout(function () {
                     alert.remove();
                 }, 2000);
             }, 1000);

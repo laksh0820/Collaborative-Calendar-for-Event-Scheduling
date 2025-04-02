@@ -1,4 +1,4 @@
-function load_calendar (group_id) {
+function load_calendar() {
   var calendarEl = document.getElementById('calendar');
   var calendar = new FullCalendar.Calendar(calendarEl, {
     timeZone: 'local',
@@ -17,7 +17,7 @@ function load_calendar (group_id) {
     },
     weekNumbers: true,
     dayMaxEvents: true,
-    eventDidMount: function(info) {
+    eventDidMount: function (info) {
       // Add tooltip if description exists
       if (info.event.extendedProps.description) {
         new bootstrap.Tooltip(info.el, {
@@ -27,8 +27,14 @@ function load_calendar (group_id) {
         });
       }
     },
-    events: `/data/${group_id}`, // Fetch events from server
-    eventClick: function(info) {
+    events: function (fetchInfo, successCallback, failureCallback) {
+      var group_id = document.getElementById('group-select').value;
+      fetch(`/data/${group_id}`)
+        .then(response => response.json())
+        .then(data => successCallback(data))
+        .catch(error => failureCallback(error));
+    }, // Fetch events from server
+    eventClick: function (info) {
       // Close any currently open Bootstrap modal
       $('.modal').modal('hide');
 
@@ -37,7 +43,7 @@ function load_calendar (group_id) {
 
       // Close the currently open tooltip
       $('.tooltip').remove();
-      
+
       // Modal approach
       const modal = new bootstrap.Modal('#modal-view-event');
       $('.event-title').html(info.event.title);
@@ -57,23 +63,29 @@ function load_calendar (group_id) {
     },
     selectable: true, // Enable date/time selection
     nowIndicator: true, // Show a line indicating the current time
-    select: function(arg) {
-        // Open the modal when a time range is selected
-        $('#modal-view-event-add').modal('show');
+    select: function (arg) {
+      // Open the modal when a time range is selected
+      $('#modal-view-event-add').modal('show');
 
-        // Set the start and end times in the form
-        $('#eventStart').val(arg.startStr);
-        $('#eventEnd').val(arg.endStr);
+      // Set the start and end times in the form
+      $('#eventStart').val(arg.startStr);
+      $('#eventEnd').val(arg.endStr);
     },
-    loading: function(bool) {
-        $('#loading').toggle(bool);
+    loading: function (bool) {
+      $('#loading').toggle(bool);
     }
   });
 
   calendar.render();
 
+  // Add event listener to the dropdown
+  document.getElementById('group-select').addEventListener('change', function () {
+    // Refetch events when selection changes
+    calendar.refetchEvents();
+  });
+
   // Save event handler
-  $('#saveEvent').on('click', function() {
+  $('#saveEvent').on('click', function () {
     var eventTitle = $('#eventTitle').val();
     var eventStart = $('#eventStart').val();
     var description = $('#eventDescription').val();
@@ -91,7 +103,7 @@ function load_calendar (group_id) {
         end: eventEnd,
         group_id: userGroup,
       }),
-      success: function(response) {
+      success: function (response) {
         calendar.addEvent({ // Add event to calendar
           title: eventTitle,
           start: eventStart,
@@ -101,18 +113,11 @@ function load_calendar (group_id) {
         $('#modal-view-event-add').modal('hide');
         alert("Event added successfully");
       },
-      error: function() {
+      error: function () {
         alert('Error adding event.');
       }
     });
   });
 };
 
-var userGroup = document.getElementById('group-select');
-
-document.addEventListener('DOMContentLoaded', load_calendar(userGroup.value)); 
-
-userGroup.addEventListener('change', function () {
-  const group_id = this.value;
-  load_calendar(group_id);
-});
+document.addEventListener('DOMContentLoaded', load_calendar);
