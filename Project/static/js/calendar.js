@@ -102,7 +102,7 @@ function load_calendar() {
     const participants = [];
 
     document.getElementById('addParticipantBtn')?.addEventListener('click', addParticipant);
-    document.getElementById('participantInput')?.addEventListener('keypress', (e) => {
+    document.getElementById('participantSelect')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         addParticipant();
@@ -110,7 +110,7 @@ function load_calendar() {
     });
 
     function addParticipant() {
-      const input = document.getElementById('participantInput');
+      const input = document.getElementById('participantSelect');
       const name = input.value.trim();
 
       if (name && !participants.includes(name)) {
@@ -130,7 +130,7 @@ function load_calendar() {
     }
 
     function renderParticipantsList() {
-      const container = document.getElementById('participantsList');
+      const container = document.getElementById('eventParticipantsList');
       container.innerHTML = '';
 
       participants.forEach(name => {
@@ -150,14 +150,17 @@ function load_calendar() {
   }
 
   function getSelectedParticipants() {
-    // Get all selected participant IDs
-    const participants = [];
+    // Get all participant badge elements
+    const badges = document.querySelectorAll('#eventParticipantsList .badge');
 
-    $('#participantsList .badge').each(function () {
-      participants.push($(this).data('name'));
+    // Convert NodeList to array and map to participant objects
+    return Array.from(badges).map(badge => {
+      // Extract the name (original text content minus the remove button)
+      const name = badge.childNodes[0].textContent.trim();
+      return {
+        name: name
+      };
     });
-
-    return participants;
   }
 
   function showError(fieldId, message) {
@@ -176,7 +179,7 @@ function load_calendar() {
     const eventEnd = $('#eventEnd').val().trim();
     const description = $('#eventDescription').val().trim();
     const userGroup = $('#group-select').val();
-    const participants = getSelectedParticipants(); // Get array of participant IDs
+    const participants = getSelectedParticipants(); // Get array of participant IDs\
 
     // Reset previous error states
     $('.is-invalid').removeClass('is-invalid');
@@ -204,7 +207,7 @@ function load_calendar() {
     }
 
     if (userGroup != 1 && participants.length === 0) {
-      showError('participantsList', 'Please select at least one participant');
+      showError('eventParticipantsList', 'Please select at least one participant');
       isValid = false;
     }
 
@@ -279,7 +282,7 @@ document.addEventListener('DOMContentLoaded', load_calendar);
 
 $(document).ready(function () {
   // Fetch members when dropdown is clicked or page loads
-  $('#participantInput').one('focus', loadMembers);
+  $('#participantSelect').one('focus', loadMembers);
 
   // Or load immediately on page load
   loadMembers();
@@ -290,7 +293,7 @@ $(document).ready(function () {
       url: `/members/${group_id}`,
       type: 'GET',
       success: function (data) {
-        const select = $('#participantInput');
+        const select = $('#participantSelect');
         select.empty().append('<option value="" disabled selected>Select a participant</option>');
 
         $.each(data, function (index, member) {
@@ -302,7 +305,7 @@ $(document).ready(function () {
         });
       },
       error: function () {
-        $('#participantInput').html('<option value="" disabled>Error loading participants</option>');
+        $('#participantSelect').html('<option value="" disabled>Error loading participants</option>');
       }
     });
   }
