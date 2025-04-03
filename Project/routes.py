@@ -126,17 +126,39 @@ def return_data(group_id):
         events = current_user.created_events
     else:
         # Get all the events for the group
-        events = Group.query.filter_by(group_id=group_id).first().events
+        group = Group.query.filter_by(group_id=group_id).first()
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        events = group.events
         
         # Get all the participants for the event
     
-    eventsData = [{
-                'title': event.event_name,
-                'description': event.description,
-                'start': event.start_time.isoformat(), 
-                'end': event.end_time.isoformat(),
-            } for event in events]
-    return jsonify(eventsData)
+    events_data = []
+    for event in events:
+        users = (
+            db.session.query()
+            .select_from(User)
+            .join(Participate, User.user_id == Participate.user_id)
+            .filter(Participate.event_id == event.event_id)
+            .add_columns(User.name,User.email)
+            .all()
+        )
+        
+        # Get participants for this event
+        participants = [{
+            'name': participant.name,
+            'email': participant.email
+            # Add other participant fields as needed
+        } for participant in users]
+        
+        events_data.append({
+            'title': event.event_name,
+            'description': event.description,
+            'start': event.start_time.isoformat(), 
+            'end': event.end_time.isoformat(),
+            'participants': participants
+        })
+    return jsonify(events_data)
 
 @app.route('/members/<group_id>')
 @login_required
@@ -170,7 +192,9 @@ def add_event():
     newEvent.creator = current_user.user_id
     newEvent.group_id = event['group_id']
     
-    participantsEmail = event['participants'][0]['name']
+    participantsEmail = []
+    for element in event['participants']:
+        participantsEmail.append(element['name'])
     
     # To see whether a Group 1 exits (to validate foreign key)
     group = Group.query.filter_by(group_id=1).first()
@@ -192,17 +216,16 @@ def add_event():
         db.session.commit()
         
         for participantEmail in participantsEmail:
-            print(participantEmail)
             participant = Participate()
-            participant.user_id = User.query.filter_by(email=participantEmail).all().user_id
+            participant.user_id = User.query.filter_by(email=participantEmail).first().user_id
             participant.event_id = newEvent.event_id
             participant.status = 'Pending'
+            db.session.add(participant)
             
-            try:
-                db.session.add(participant)
-                db.session.commit()
-            except:
-                return "Unable to add the participants"
+        try:
+            db.session.commit()
+        except:
+            return "Unable to add the participants"
     except:
         return "Unable to add event to the database"
     

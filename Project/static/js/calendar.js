@@ -52,6 +52,52 @@ function load_calendar() {
       $('.event-body').html(
         info.event.extendedProps?.description || 'No description'
       );
+
+      var group_id = document.getElementById('group-select').value;
+      if (group_id != 1) {
+        // Add the participation section
+        document.getElementById("participants-section").style.display = 'block';
+
+        // Handle participants
+        const participants = info.event.extendedProps.participants;
+        const participantsList = document.getElementById('participants-list');
+
+        // Clear previous participants
+        participantsList.innerHTML = '';
+
+        // Check if there are participants
+        if (participants && participants.length > 0) {
+          // Create badges for each participant
+          participants.forEach(participant => {
+            const badge = document.createElement('span');
+            badge.className = 'badge d-flex align-items-center mb-2';
+            // badge.style.backgroundColor = 'rgb(30, 18, 82)';
+            badge.style.color = 'black';
+            badge.style.padding = '0.5rem 1rem';
+            badge.style.borderRadius = '0.25rem';
+
+            // Include both name and email if available
+            let badgeContent = participant.name || '';
+            if (participant.email) {
+              badgeContent += badgeContent ? ` (${participant.email})` : participant.email;
+            }
+
+            badge.textContent = badgeContent;
+            participantsList.appendChild(badge);
+          });
+        } else {
+          // Show message if no participants
+          const noParticipants = document.createElement('p');
+          noParticipants.textContent = 'No participants';
+          noParticipants.className = 'text-muted';
+          participantsList.appendChild(noParticipants);
+        }
+      }
+      else {
+        // Hide the participants section for individual events
+        document.getElementById("participants-section").style.display = 'none';
+      }
+
       info.jsEvent.preventDefault();
       modal.show();
     },

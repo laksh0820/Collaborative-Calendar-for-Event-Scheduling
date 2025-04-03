@@ -43,7 +43,18 @@
 		<div class="modal-content">
 			<div class="modal-body">
 				<h4 class="modal-title"><span class="event-icon"></span><span class="event-title"></span></h4>
-				<div class="event-body"></div>
+				<div class="description" style="display: flex;">
+					<span className="icon">📅</span>
+					<p class="event-body" style="margin-left: 5px;"></p>
+				</div>
+				<!-- Participants Section -->
+				<div id="participants-section" class="mt-2">
+					<div class="participantHeader" style="display: flex;">
+						<span className="icon">👥</span>
+						<h5 style="margin-left: 5px;">Participants</h5>
+					</div>
+					<div id="participants-list" class="d-flex flex-wrap mt-1"></div>
+				</div>
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
@@ -75,7 +86,8 @@
 					</div>
 					<div class="form-group">
 						<label>Event Description</label>
-						<textarea class="form-control" name="edesc" id="eventDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
+						<textarea class="form-control" name="edesc" id="eventDescription" rows="6"
+							style="min-height: 100px; resize: vertical;"></textarea>
 					</div>
 					<div class="form-group" id="participants">
 						<label>Participants</label>
