@@ -140,6 +140,8 @@ def add_event():
     newEvent.creator = current_user.user_id
     newEvent.group_id = event['group_id']
     
+    participantsEmail = event['participants'][0]['name']
+    
     # To see whether a Group 1 exits (to validate foreign key)
     group = Group.query.filter_by(group_id=1).first()
     
@@ -158,6 +160,19 @@ def add_event():
     try:
         db.session.add(newEvent)
         db.session.commit()
+        
+        for participantEmail in participantsEmail:
+            print(participantEmail)
+            participant = Participate()
+            participant.user_id = User.query.filter_by(email=participantEmail).all().user_id
+            participant.event_id = newEvent.event_id
+            participant.status = 'Pending'
+            
+            try:
+                db.session.add(participant)
+                db.session.commit()
+            except:
+                return "Unable to add the participants"
     except:
         return "Unable to add event to the database"
     
