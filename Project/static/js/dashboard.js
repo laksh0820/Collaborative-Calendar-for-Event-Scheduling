@@ -35,12 +35,20 @@ function create_group() {
                                 <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Participants</label>
+                                <label class="form-label">Members</label>
                                 <div class="input-group mb-2">
-                                    <input type="text" class="form-control" id="participantInput" placeholder="Enter email">
-                                    <button class="btn btn-light" type="button" id="addParticipantBtn">Add</button>
+                                    <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
+                                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Editor
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="roleDropdown">
+                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Viewer';">Viewer</a></li>
+                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
+                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
+                                    </ul>
+                                    <button class="btn btn-light" type="button" id="addMemberBtn">Add</button>
                                 </div>
-                                <div id="participantsList" class="d-flex flex-wrap gap-2"></div>
+                                <div id="membersList" class="d-flex flex-wrap gap-2"></div>
                             </div>
                         </form>
                     </div>
@@ -61,45 +69,50 @@ function create_group() {
     // Show modal
     modal.show();
 
-    const participants = [];
+    const members = [];
+    const permissions = [];
 
-    // Add participant functionality
-    document.getElementById('addParticipantBtn')?.addEventListener('click', addParticipant);
-    document.getElementById('participantInput')?.addEventListener('keypress', (e) => {
+    // Add member functionality
+    document.getElementById('addMemberBtn')?.addEventListener('click', addMember);
+    document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            addParticipant();
+            addMember();
         }
     });
 
     // Submit button functionality
     document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
 
-    function addParticipant() {
-        const input = document.getElementById('participantInput');
-        const name = input.value.trim();
+    function addMember() {
+        const meminput = document.getElementById('memberInput');
+        const name = meminput.value.trim();
+        const perminput = document.getElementById('roleDropdown');
+        const perm = perminput.textContent.trim();
 
-        if (name && !participants.includes(name)) {
-            participants.push(name);
-            renderParticipantsList();
-            input.value = '';
-            input.focus();
+        if (name && !members.includes(name)) {
+            members.push(name);
+            permissions.push(perm);
+            renderMembersList();
+            meminput.value = '';
+            meminput.focus();
         }
     }
 
-    function removeParticipant(name) {
-        const index = participants.indexOf(name);
+    function removeMember(name) {
+        const index = members.indexOf(name);
         if (index !== -1) {
-            participants.splice(index, 1);
-            renderParticipantsList();
+            members.splice(index, 1);
+            permissions.splice(index, 1);
+            renderMembersList();
         }
     }
 
-    function renderParticipantsList() {
-        const container = document.getElementById('participantsList');
+    function renderMembersList() {
+        const container = document.getElementById('membersList');
         container.innerHTML = '';
 
-        participants.forEach(name => {
+        members.forEach(name => {
             const badge = document.createElement('span');
             badge.className = 'badge d-flex align-items-center';
             badge.style = 'background:rgb(30, 18, 82);'
@@ -110,7 +123,7 @@ function create_group() {
             container.appendChild(badge);
 
             // Add event listener to remove button
-            badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
+            badge.querySelector('button').addEventListener('click', () => removeMember(name));
         });
     }
 
@@ -124,25 +137,16 @@ function create_group() {
         }
 
         // Send data to server
-        const groupData = {
-            name: groupName,
-            description: description,
-            participants: participants
-        };
-
-
-        // Close the modal
-        modal.hide();
-
-        // Reset form
-        document.getElementById('createGroupForm').reset();
-        participants.length = 0;
-
-        // Display success message
         $.ajax({
             url: '/create_group',
-            type: 'GET',
+            type: 'POST',
             contentType: 'application/json',
+            data: JSON.stringify({
+                name: groupName,
+                description: description,
+                members: members,
+                permissions: permissions
+            }),
             success: function (response) {
                 // Display the success flash message
                 const flashHTML = `
@@ -166,5 +170,13 @@ function create_group() {
                 alert('Group Form Submission error');
             }
         });
+
+        // Close the modal
+        modal.hide();
+
+        // Reset form
+        document.getElementById('createGroupForm').reset();
+        members.length = 0;
+        permissions.length = 0;
     }
 }

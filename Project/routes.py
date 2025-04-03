@@ -68,10 +68,40 @@ def signout():
     flash("Logged out Successfully",'success')
     return redirect(url_for('signin'))
 
-@app.route('/create_group')
+@app.route('/create_group',methods=['GET','POST'])
 @login_required
 def redirect_create_group():
-    return jsonify(success=True)
+    if request.method == 'POST':
+        group = request.get_json()
+     
+        newGroup = Group()
+        newGroup.group_name = group['name']
+        newGroup.description = group['description']
+        newGroup.version_number = 0
+
+        admin = Member()
+        admin.user_id = current_user.user_id
+        admin.group_id = newGroup.group_id
+        admin.permission = 'Admin'
+
+        newMemberList = []
+        for i in range(len(group['members'])):
+            newMember = Member()
+            newMember.user_id = 1       # change to user_id corresponding to group['members'][i]
+            newMember.group_id = newGroup.group_id
+            newMember.permission = group['permissions'][i]
+            newMemberList.append(newMember)
+        
+        try:
+            db.session.add(newGroup)
+            db.session.add(admin)
+            for newMember in newMemberList:
+                db.session.add(newMember)
+            db.session.commit()
+        except:
+            return "Unable to add new group to the database"
+    
+        return jsonify(success=True)
 
 @app.route('/calendar')
 @login_required
