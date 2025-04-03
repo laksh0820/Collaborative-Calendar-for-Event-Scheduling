@@ -32,20 +32,20 @@ function create_group() {
                             </div>
                             <div class="mb-3">
                                 <label for="groupDescription" class="form-label">Description</label>
-                                <textarea class="form-control" id="groupDescription" rows="3"></textarea>
+                                <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Participants</label>
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control" id="participantInput" placeholder="Enter email">
-                                    <button class="btn btn-outline-secondary" type="button" id="addParticipantBtn">Add</button>
+                                    <button class="btn btn-light" type="button" id="addParticipantBtn">Add</button>
                                 </div>
                                 <div id="participantsList" class="d-flex flex-wrap gap-2"></div>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="submitGroupBtn">Create Group</button>
                     </div>
                 </div>

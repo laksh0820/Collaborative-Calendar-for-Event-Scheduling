@@ -97,6 +97,8 @@ def return_data(group_id):
     else:
         # Get all the events for the group
         events = Group.query.filter_by(group_id=group_id).first().events
+        
+        # Get all the participants for the event
     
     eventsData = [{
                 'title': event.event_name,
@@ -105,6 +107,24 @@ def return_data(group_id):
                 'end': event.end_time.isoformat(),
             } for event in events]
     return jsonify(eventsData)
+
+@app.route('/members/<group_id>')
+@login_required
+def get_members(group_id):
+    members = (
+        db.session.query()
+        .select_from(User)
+        .join(Member, Member.user_id == User.user_id)
+        .filter(Member.group_id == group_id)
+        .add_columns(User.name,User.email)
+        .all()
+    )
+    
+    members_list = [{
+                'name': member.name,
+                'email': member.email
+            } for member in members]
+    return jsonify(members_list)
 
 @app.route('/add_event',methods=['POST'])
 @login_required
