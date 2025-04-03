@@ -73,29 +73,29 @@ def signout():
 def redirect_create_group():
     if request.method == 'POST':
         group = request.get_json()
-     
-        newGroup = Group()
-        newGroup.group_name = group['name']
-        newGroup.description = group['description']
-        newGroup.version_number = 0
 
-        admin = Member()
-        admin.user_id = current_user.user_id
-        admin.group_id = newGroup.group_id
-        admin.permission = 'Admin'
-
-        newMemberList = []
-        for i in range(len(group['members'])):
-            newMember = Member()
-            newMember.user_id = 1       # change to user_id corresponding to group['members'][i]
-            newMember.group_id = newGroup.group_id
-            newMember.permission = group['permissions'][i]
-            newMemberList.append(newMember)
-        
         try:
+            newGroup = Group(
+                group_name = group['name'],
+                description = group['description'],
+                version_number = 0
+            )
             db.session.add(newGroup)
+            db.session.flush()
+
+            admin = Member(
+                user_id = current_user.user_id,
+                group_id = newGroup.group_id,
+                permission = 'Admin'
+            )
             db.session.add(admin)
-            for newMember in newMemberList:
+            
+            for i in range(len(group['members'])):
+                newMember = Member(
+                    user_id = 1,       # change to user_id corresponding to group['members'][i]
+                    group_id = newGroup.group_id,
+                    permission = group['permissions'][i]
+                )
                 db.session.add(newMember)
             db.session.commit()
         except:

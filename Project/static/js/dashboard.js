@@ -73,7 +73,10 @@ function create_group() {
     const permissions = [];
 
     // Add member functionality
-    document.getElementById('addMemberBtn')?.addEventListener('click', addMember);
+    document.getElementById('addMemberBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        addMember();
+    });
     document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -87,12 +90,26 @@ function create_group() {
 
     function addMember() {
         const meminput = document.getElementById('memberInput');
-        const name = meminput.value.trim();
+        const email = meminput.value.trim();
         const perminput = document.getElementById('roleDropdown');
         const perm = perminput.textContent.trim();
 
-        if (name && !members.includes(name)) {
-            members.push(name);
+        const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        if (!emailRegex.test(email)) {
+            const tooltipOptions = {
+                title: '<span><i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter a valid email</span>',
+                placement: 'top',
+                html: true
+            };
+            const tooltip = new bootstrap.Tooltip(meminput, tooltipOptions);
+            tooltip.show();
+            setTimeout(() => {
+                tooltip.dispose();
+            }, 1500);
+            return;
+        }
+        if (email && !members.includes(email)) {
+            members.push(email);
             permissions.push(perm);
             renderMembersList();
             meminput.value = '';
@@ -100,8 +117,8 @@ function create_group() {
         }
     }
 
-    function removeMember(name) {
-        const index = members.indexOf(name);
+    function removeMember(email) {
+        const index = members.indexOf(email);
         if (index !== -1) {
             members.splice(index, 1);
             permissions.splice(index, 1);
@@ -113,18 +130,18 @@ function create_group() {
         const container = document.getElementById('membersList');
         container.innerHTML = '';
 
-        members.forEach(name => {
+        members.forEach(email => {
             const badge = document.createElement('span');
             badge.className = 'badge d-flex align-items-center';
             badge.style = 'background:rgb(30, 18, 82);'
             badge.innerHTML = `
-                ${name}
-                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
+                ${email}
+                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${email}"></button>
             `;
             container.appendChild(badge);
 
             // Add event listener to remove button
-            badge.querySelector('button').addEventListener('click', () => removeMember(name));
+            badge.querySelector('button').addEventListener('click', () => removeMember(email));
         });
     }
 
@@ -133,7 +150,17 @@ function create_group() {
         const description = document.getElementById('groupDescription').value.trim();
 
         if (!groupName) {
-            // Alert that Group name is required
+            const groupNameEl = document.getElementById('groupName');
+            const tooltipOptions = {
+                title: '<span><i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter a group name</span>',
+                placement: 'top',
+                html: true
+            };
+            const tooltip = new bootstrap.Tooltip(groupNameEl, tooltipOptions);
+            tooltip.show();
+            setTimeout(() => {
+                tooltip.dispose();
+            }, 1500);
             return;
         }
 
