@@ -53,7 +53,7 @@ function create_group() {
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="cancelGroupBtn" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="submitGroupBtn">Create Group</button>
                     </div>
                 </div>
@@ -81,8 +81,9 @@ function create_group() {
         }
     });
 
-    // Submit button functionality
+    // Submit and Cancel button functionality
     document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
+    document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
 
     function addMember() {
         const meminput = document.getElementById('memberInput');
@@ -178,5 +179,14 @@ function create_group() {
         document.getElementById('createGroupForm').reset();
         members.length = 0;
         permissions.length = 0;
+        renderMembersList();
+    }
+
+    function cancelGroup() {
+        // Reset form
+        document.getElementById('createGroupForm').reset();
+        members.length = 0;
+        permissions.length = 0;
+        renderMembersList();
     }
 }
