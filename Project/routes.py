@@ -218,6 +218,7 @@ def return_data(group_id):
         events_data = []
         for event in events:
             events_data.append({
+                'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
@@ -249,6 +250,7 @@ def return_data(group_id):
             } for participant in users]
             
             events_data.append({
+                'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
@@ -331,3 +333,25 @@ def add_event():
         return "Unable to add event to the database"
     
     return jsonify(success=True)
+
+@app.route('/remove_event/<int:event_id>', methods=['DELETE'])
+@login_required
+def remove_event(event_id):
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+
+    try:
+        # First delete participations
+        for participation in event.participations:
+            db.session.delete(participation)
+        
+        # Then delete the event
+        db.session.delete(event)
+        
+        db.session.commit()
+        return jsonify({'message': 'Event deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
