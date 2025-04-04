@@ -150,6 +150,19 @@ function load_calendar() {
         document.getElementById("participants-section").style.display = 'none';
       }
 
+      var group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+
+      if (group_permission == 'Viewer') {
+        document.getElementById('removeEvent').style.display = 'none';
+      }
+      else {
+        // Add delete handler
+        $('#removeEvent').on('click', function (e) {
+          e.preventDefault();
+          removeEvent(info.event);
+        });
+      }
+
       info.jsEvent.preventDefault();
       modal.show();
     },
@@ -430,6 +443,64 @@ function load_calendar() {
       });
     }
   });
+
+  // Remove event handler
+  function removeEvent(event) {
+    // Remove from calendar
+    event.remove();
+
+    // Close the modal
+    $('#modal-view-event').modal('hide');
+
+    // Delete from the server
+    $.ajax({
+      url: `/remove_event/${event.extendedProps.event_id}`,
+      type: 'DELETE',
+      contentType: 'application/json',
+      success: function () {
+        // Display the success flash message
+        const flashHTML = `
+        <div class="alert alert-dismissible fade show" role="alert"
+            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-rem-success">
+            <i class="bx bx-check-circle" style="color:lawngreen;"></i>
+            Event Removed Successfully
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+        // Auto-remove
+        setTimeout(function () {
+          const flashElement = document.getElementById('event-rem-success');
+          flashElement.style.opacity = '0';
+          setTimeout(function () {
+            flashElement.remove();
+          }, 2000);
+        }, 1000);
+      },
+      error: function () {
+        // Remove any existing div with the class
+        const existingDivs = document.querySelectorAll('.alert');
+        existingDivs.forEach(div => div.remove());
+
+        // Display the error flash message
+        const flashHTML = `
+        <div class="alert alert-dismissible fade show" role="alert"
+            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-rem-error">
+            <i class="bx bx-error-circle" style="color:red;"></i>
+            Error Removing event
+        </div>`;
+        const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+        // Auto-remove
+        setTimeout(function () {
+          const flashElement = document.getElementById('event-rem-error');
+          flashElement.style.opacity = '0';
+          setTimeout(function () {
+            flashElement.remove();
+          }, 2000);
+        }, 1000);
+      }
+    });
+  };
 };
 
 document.addEventListener('DOMContentLoaded', load_calendar);
