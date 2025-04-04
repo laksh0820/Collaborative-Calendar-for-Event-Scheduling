@@ -12,6 +12,11 @@
 {% endblock %}
 
 {% block content %}
+<!-- In your template -->
+<meta name="user-id" content="{{ current_user.user_id }}">
+<meta name="user-name" content="{{ current_user.name }}">
+<meta name="user-email" content="{{ current_user.email }}">
+
 <!-- Bootstrap Modal -->
 <div class="p-5">
 	<h2 class="mb-4">Calendar</h2>
@@ -159,6 +164,7 @@
 						<label>Participants</label>
 						<div class="input-group mb-2">
 							<select class="form-control" id="participantSelect" placeholder="Enter email">
+								<option></option>
 							</select>
 							<button class="btn btn-light" type="button" id="addParticipantBtn"
 								style="color:rgb(30, 18, 82);">
@@ -177,7 +183,6 @@
 		</div>
 	</div>
 </div>
-
 
 <script src="{{ url_for ('static',filename='js/calendar.js') }}"></script>
 {% endblock %}

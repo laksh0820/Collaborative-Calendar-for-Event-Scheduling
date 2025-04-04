@@ -190,11 +190,23 @@ function load_calendar() {
 
   // Add event listener to the dropdown
   document.getElementById('group-select').addEventListener('change', function () {
+    // Remove all events at once
+    calendar.removeAllEvents();
+
     // Refetch events when selection changes
     calendar.refetchEvents();
   });
 
   function showParticipants() {
+    const container = document.getElementById('eventParticipantsList');
+    container.innerHTML = '';
+
+    const userEmail = document.querySelector('meta[name="user-email"]').content;
+    const currentUser = document.createElement('span');
+    currentUser.className = 'badge d-flex align-items-center';
+    currentUser.style = 'background:rgb(30, 18, 82);'
+    currentUser.innerHTML = `${userEmail}`;
+    container.appendChild(currentUser);
 
     // Add participants for events functionality
     const participants = [];
@@ -231,6 +243,13 @@ function load_calendar() {
       const container = document.getElementById('eventParticipantsList');
       container.innerHTML = '';
 
+      const userEmail = document.querySelector('meta[name="user-email"]').content;
+      const currentUser = document.createElement('span');
+      currentUser.className = 'badge d-flex align-items-center';
+      currentUser.style = 'background:rgb(30, 18, 82);'
+      currentUser.innerHTML = `${userEmail}`;
+      container.appendChild(currentUser);
+
       participants.forEach(name => {
         const badge = document.createElement('span');
         badge.className = 'badge d-flex align-items-center';
@@ -265,7 +284,6 @@ function load_calendar() {
     $(`#${fieldId}`).addClass('is-invalid');
     $(`#${fieldId}`).next('.invalid-feedback').text(message).show();
   }
-
 
   // Save event handler
   $('#saveEvent').on('click', function (e) {
@@ -327,13 +345,11 @@ function load_calendar() {
           participants: participants
         }),
         success: function (response) {
-          calendar.addEvent({ // Add event to calendar
-            title: eventTitle,
-            start: eventStart,
-            description: description,
-            end: eventEnd,
-            participants: participants
-          });
+          // Remove all events at once
+          calendar.removeAllEvents();
+
+          // Refetch events when selection changes
+          calendar.refetchEvents();
 
           // Display the success flash message
           const flashHTML = `

@@ -14,6 +14,10 @@ searchBtn.addEventListener('click', () => {
 createGrp.addEventListener('click', create_group);
 
 function create_group() {
+    // Reset previous error states
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').hide();
+
     // Create modal HTML if it doesn't exist
     if (!document.getElementById('modal-create-group')) {
         const modalHTML = `
@@ -29,6 +33,7 @@ function create_group() {
                             <div class="mb-3">
                                 <label for="groupName" class="form-label">Group Name</label>
                                 <input type="text" class="form-control" id="groupName" required>
+                                <div class="invalid-feedback"></div>
                             </div>
                             <div class="mb-3">
                                 <label for="groupDescription" class="form-label">Description</label>
@@ -39,15 +44,16 @@ function create_group() {
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
                                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Editor
+                                    Editor
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="roleDropdown">
-                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Viewer';">Viewer</a></li>
-                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
-                                        <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
+                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Viewer';">Viewer</a></li>
+                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
+                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
                                     </ul>
                                     <button class="btn btn-light" type="button" id="addMemberBtn">Add</button>
                                 </div>
+                                <div id="member-invalid-feedback" class="invalid-feedback"></div>
                                 <div id="membersList" class="d-flex flex-wrap gap-2"></div>
                             </div>
                         </form>
@@ -73,7 +79,7 @@ function create_group() {
     const permissions = [];
 
     // Add member functionality
-    document.getElementById('addMemberBtn')?.addEventListener('click', function(e) {
+    document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
         e.preventDefault();
         addMember();
     });
@@ -96,16 +102,8 @@ function create_group() {
 
         const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         if (!emailRegex.test(email)) {
-            const tooltipOptions = {
-                title: '<span><i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter a valid email</span>',
-                placement: 'top',
-                html: true
-            };
-            const tooltip = new bootstrap.Tooltip(meminput, tooltipOptions);
-            tooltip.show();
-            setTimeout(() => {
-                tooltip.dispose();
-            }, 1500);
+            $(`#memberInput`).addClass('is-invalid');
+            $(`#member-invalid-feedback`).text('Please enter a valid email').show();
             return;
         }
         if (email && !members.includes(email)) {
@@ -150,17 +148,8 @@ function create_group() {
         const description = document.getElementById('groupDescription').value.trim();
 
         if (!groupName) {
-            const groupNameEl = document.getElementById('groupName');
-            const tooltipOptions = {
-                title: '<span><i class="bi bi-exclamation-triangle-fill me-1"></i>Please enter a group name</span>',
-                placement: 'top',
-                html: true
-            };
-            const tooltip = new bootstrap.Tooltip(groupNameEl, tooltipOptions);
-            tooltip.show();
-            setTimeout(() => {
-                tooltip.dispose();
-            }, 1500);
+            $(`#groupName`).addClass('is-invalid');
+            $(`#groupName`).next('.invalid-feedback').text('Please enter a group name').show();
             return;
         }
 
@@ -176,6 +165,27 @@ function create_group() {
                 permissions: permissions
             }),
             success: function (response) {
+                // Update the group-select 
+                $.ajax({
+                    url: '/get_groups',
+                    type: 'GET',
+                    success: function (data) {
+                        const select = $('#group-select');
+                        select.empty().append('<option value="1">Dashboard</option>');
+
+                        $.each(data, function (index, group) {
+                            select.append(
+                                $('<option></option>')
+                                    .val(group.group_id)
+                                    .text(group.name)
+                            );
+                        });
+                    },
+                    error: function () {
+                        $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+                    }
+                });
+
                 // Display the success flash message
                 const flashHTML = `
                 <div class="alert alert-dismissible fade show" role="alert"

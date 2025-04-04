@@ -54,7 +54,7 @@ def signup():
             form.email.data = ''
             form.password.data = ''
             form.confirm_password.data = ''
-            return render_template('base.html')
+            return redirect(url_for('get_calendar'))
         else:
             flash('This email already exits. Please sign in','danger')
             return render_template('signup.html',form=form)
@@ -68,6 +68,7 @@ def signout():
     flash("Logged out Successfully",'success')
     return redirect(url_for('signin'))
 
+# To redirect after group creation
 @app.route('/create_group',methods=['GET','POST'])
 @login_required
 def redirect_create_group():
@@ -102,7 +103,30 @@ def redirect_create_group():
             return "Unable to add new group to the database"
     
         return jsonify(success=True)
+    
+# To get the groups for group-select
+@app.route('/get_groups')
+@login_required
+def get_groups():
+    groups = (
+        db.session.query()
+        .select_from(Group)
+        .join(Member, Group.group_id == Member.group_id)
+        .join(User, User.user_id == Member.user_id)
+        .filter(User.user_id == current_user.user_id)
+        .add_columns(Group.group_id,Group.group_name)
+        .group_by(Group.group_id,Group.group_name)
+        .all()
+    )
+    
+    groups_list = [{
+        'group_id': group.group_id,
+        'name': group.group_name
+    } for group in groups]
+    
+    return jsonify(groups_list)
 
+# To get the calendar for the group or individual
 @app.route('/calendar')
 @login_required
 def get_calendar():
@@ -113,71 +137,100 @@ def get_calendar():
         .join(User, User.user_id == Member.user_id)
         .filter(User.user_id == current_user.user_id)
         .add_columns(Group.group_id,Group.group_name)
+        .group_by(Group.group_id,Group.group_name)
         .all()
     )
-        
+
     return render_template('calendar.html',groups=groups)
 
+# To get the events for the group or individual
 @app.route('/data/<group_id>')
 @login_required
 def return_data(group_id):
+    group_id = int(group_id)
     if group_id == 1:
+        # To see whether a Group 1 exits (to validate foreign key)
+        group = Group.query.filter_by(group_id=1).first()
+        
+        if group is None:
+            newGroup = Group()
+            newGroup.group_name = 'No Group'
+            newGroup.description = 'No Description'
+            newGroup.version_number = 0
+            
+            try:
+                db.session.add(newGroup)
+                db.session.commit()
+            except:
+                return "Unable to add group 1 to the database"
+        
         # Get all the events from the database created by current user
         events = current_user.created_events
+        
+        events_data = []
+        for event in events:
+            events_data.append({
+                'title': event.event_name,
+                'description': event.description,
+                'start': event.start_time.isoformat(), 
+                'end': event.end_time.isoformat()
+            })
     else:
         # Get all the events for the group
         group = Group.query.filter_by(group_id=group_id).first()
         if not group:
             return jsonify({'error': 'Group not found'}), 404
         events = group.events
-        
-        # Get all the participants for the event
     
-    events_data = []
-    for event in events:
-        users = (
-            db.session.query()
-            .select_from(User)
-            .join(Participate, User.user_id == Participate.user_id)
-            .filter(Participate.event_id == event.event_id)
-            .add_columns(User.name,User.email)
-            .all()
-        )
-        
-        # Get participants for this event
-        participants = [{
-            'name': participant.name,
-            'email': participant.email
-            # Add other participant fields as needed
-        } for participant in users]
-        
-        events_data.append({
-            'title': event.event_name,
-            'description': event.description,
-            'start': event.start_time.isoformat(), 
-            'end': event.end_time.isoformat(),
-            'participants': participants
-        })
+        events_data = []
+        for event in events:
+            users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id)
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            # Get participants for this event
+            participants = [{
+                'name': participant.name,
+                'email': participant.email
+                # Add other participant fields as needed
+            } for participant in users]
+            
+            events_data.append({
+                'title': event.event_name,
+                'description': event.description,
+                'start': event.start_time.isoformat(), 
+                'end': event.end_time.isoformat(),
+                'participants': participants
+            })
     return jsonify(events_data)
 
+# To get the memebers of the group
 @app.route('/members/<group_id>')
 @login_required
 def get_members(group_id):
+    group_id = int(group_id)
     members = (
         db.session.query()
         .select_from(User)
         .join(Member, Member.user_id == User.user_id)
         .filter(Member.group_id == group_id)
+        .filter(User.user_id != current_user.user_id)
         .add_columns(User.name,User.email)
         .all()
     )
     
     members_list = [{
-                'name': member.name,
-                'email': member.email
-            } for member in members]
+        'name': member.name,
+        'email': member.email
+    } for member in members]
     return jsonify(members_list)
 
+# To add an event
 @app.route('/add_event',methods=['POST'])
 @login_required
 def add_event():
