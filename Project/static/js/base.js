@@ -69,6 +69,22 @@ function create_group() {
             </div>
         </div>`;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add member functionality
+        document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            addMember();
+        });
+        document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addMember();
+            }
+        });
+
+        // Submit and Cancel button functionality
+        document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
+        document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
     }
 
     // Initialize modal
@@ -80,22 +96,6 @@ function create_group() {
 
     const members = [];
     const permissions = [];
-
-    // Add member functionality
-    document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
-        e.preventDefault();
-        addMember();
-    });
-    document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addMember();
-        }
-    });
-
-    // Submit and Cancel button functionality
-    document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
-    document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
 
     function addMember() {
         if ($(`#memberInput`).hasClass('is-invalid')) {
