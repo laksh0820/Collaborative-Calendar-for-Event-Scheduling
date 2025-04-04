@@ -19,7 +19,7 @@ def signin():
     form = SignInForm()
     
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
             if check_password_hash(user.password,str(form.password.data)):
                 login_user(user,remember=form.remember_me.data)
@@ -36,12 +36,12 @@ def signin():
 def signup():
     form = SignUpForm()
     if form.validate_on_submit():
-        user_email = User.query.filter_by(email=form.email.data).first()
+        user_email = User.query.filter_by(email=form.email.data.lower()).first()
 
         if (user_email is None):
             newUser = User()
             newUser.name = form.name.data
-            newUser.email = form.email.data
+            newUser.email = form.email.data.lower()
             newUser.password = generate_password_hash(str(form.password.data))
             try:
                 db.session.add(newUser)
@@ -92,8 +92,11 @@ def redirect_create_group():
             db.session.add(admin)
             
             for i in range(len(group['members'])):
+                user = User.query.filter_by(email=group['members'][i].lower()).first()
+                if user is None:
+                    continue
                 newMember = Member(
-                    user_id = 1,       # change to user_id corresponding to group['members'][i]
+                    user_id = user.user_id,
                     group_id = newGroup.group_id,
                     permission = group['permissions'][i]
                 )
@@ -125,6 +128,10 @@ def get_groups():
     } for group in groups]
     
     return jsonify(groups_list)
+@app.route('/check_invites',methods=['GET','POST'])
+@login_required
+def redirect_check_invites():
+    pass
 
 # To get the calendar for the group or individual
 @app.route('/calendar')
@@ -270,7 +277,7 @@ def add_event():
         
         for participantEmail in participantsEmail:
             participant = Participate()
-            participant.user_id = User.query.filter_by(email=participantEmail).first().user_id
+            participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
             participant.event_id = newEvent.event_id
             participant.status = 'Pending'
             db.session.add(participant)
