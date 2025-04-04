@@ -1,8 +1,8 @@
 {% for message in get_flashed_messages(with_categories = True) %}
 {% if message %}
 {% if message[0] == "danger"%}
-<div class="alert alert-danger alert-dismissible fade show" role="alert"
-    style="color:black; padding:10px; margin-right:5px;">
+<div class="alert alert-dismissible fade show" role="alert"
+    style="background-color:white; color:black; padding:10px; margin-right:5px;">
     <i class="bx bx-error-circle" style="color:red;"></i>
     {{ message[1] }}
 </div>

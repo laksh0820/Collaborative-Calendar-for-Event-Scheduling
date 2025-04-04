@@ -99,16 +99,16 @@
   {% if form %}
   {% if form.errors %}
   {% if form.errors|first == "email" %}
-  <div class="alert alert-danger alert-dismissible fade show" role="alert"
-    style="color:black; padding:10px; margin-right:5px;">
+  <div class="alert alert-dismissible fade show" role="alert"
+    style="background-color:white; color:black; padding:10px; margin-right:5px;">
     <i class="bx bx-error-circle" style="color:red;"></i>
     {{ form.errors.email|first }}
   </div>
   {% endif %}
 
   {% if form.errors|first == "password" %}
-  <div class="alert alert-danger alert-dismissible fade show" role="alert"
-    style="color:black; padding:10px; margin-right:5px;">
+  <div class="alert alert-dismissible fade show" role="alert"
+    style="background-color:white; color:black; padding:10px; margin-right:5px;">
     <i class="bx bx-error-circle" style="color:red;"></i>
     {{ form.errors.password|first }}
   </div>

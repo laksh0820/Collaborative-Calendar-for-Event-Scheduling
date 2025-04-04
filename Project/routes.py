@@ -117,17 +117,19 @@ def get_groups():
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
         .filter(User.user_id == current_user.user_id)
-        .add_columns(Group.group_id,Group.group_name)
-        .group_by(Group.group_id,Group.group_name)
+        .add_columns(Group.group_id,Group.group_name,Member.permission)
+        .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
     )
     
     groups_list = [{
         'group_id': group.group_id,
-        'name': group.group_name
+        'name': group.group_name,
+        'permission':group.permission
     } for group in groups]
     
     return jsonify(groups_list)
+
 @app.route('/check_invites',methods=['GET','POST'])
 @login_required
 def redirect_check_invites():
@@ -143,8 +145,8 @@ def get_calendar():
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
         .filter(User.user_id == current_user.user_id)
-        .add_columns(Group.group_id,Group.group_name)
-        .group_by(Group.group_id,Group.group_name)
+        .add_columns(Group.group_id,Group.group_name,Member.permission)
+        .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
     )
 
