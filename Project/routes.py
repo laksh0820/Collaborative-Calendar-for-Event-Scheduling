@@ -102,6 +102,11 @@ def redirect_create_group():
             return "Unable to add new group to the database"
     
         return jsonify(success=True)
+    
+@app.route('/check_invites',methods=['GET','POST'])
+@login_required
+def redirect_check_invites():
+    pass
 
 @app.route('/calendar')
 @login_required

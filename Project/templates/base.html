@@ -48,16 +48,20 @@
       <li>
         {% if current_user.is_authenticated %}
         <a id="create-group-link">
-          {% else %}
-          <a href="{{ url_for('redirect_create_group') }}">
-            {% endif %}
-            <i class="bx bxs-user-plus"></i>
-            <span class="links_name">Create Group</span>
-          </a>
-          <span class="tooltip">Create Group</span>
+        {% else %}
+        <a href="{{ url_for('redirect_create_group') }}">
+        {% endif %}
+          <i class="bx bxs-user-plus"></i>
+          <span class="links_name">Create Group</span>
+        </a>
+        <span class="tooltip">Create Group</span>
       </li>
       <li>
-        <a href="#">
+        {% if current_user.is_authenticated %}
+        <a id="check-invites-link">
+        {% else %}
+        <a href="{{ url_for('redirect_check_invites') }}">
+        {% endif %}
           <i class="bx bx-envelope"></i>
           <span class="links_name">Invites</span>
         </a>
@@ -117,7 +121,7 @@
     {% endblock %}
   </div>
 
-  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/base.js') }}"></script>
 </body>
 
 </html>
