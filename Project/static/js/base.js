@@ -2,6 +2,7 @@ let btn = document.querySelector('#btn');
 let sidebar = document.querySelector('.sidebar');
 let searchBtn = document.querySelector('.bx-search');
 let createGrp = document.querySelector('#create-group-link')
+let checkInvt = document.querySelector('#check-invites-link')
 
 btn.addEventListener('click', () => {
     sidebar.classList.toggle('active');
@@ -12,7 +13,9 @@ searchBtn.addEventListener('click', () => {
 });
 
 createGrp.addEventListener('click', create_group);
+checkInvt.addEventListener('click', check_invites);
 
+// Create group modal functionality
 function create_group() {
     // Reset previous error states
     $('.is-invalid').removeClass('is-invalid');
@@ -95,6 +98,11 @@ function create_group() {
     document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
 
     function addMember() {
+        if ($(`#memberInput`).hasClass('is-invalid')) {
+            $(`#memberInput`).removeClass('is-invalid');
+            $(`#member-invalid-feedback`).hide();
+        }
+
         const meminput = document.getElementById('memberInput');
         const email = meminput.value.trim();
         const perminput = document.getElementById('roleDropdown');
@@ -231,5 +239,241 @@ function create_group() {
         members.length = 0;
         permissions.length = 0;
         renderMembersList();
+    }
+}
+
+// Create check invite modal functionality
+function check_invites() {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('modal-check-invites')) {
+        const modalHTML = `
+        <div class="modal fade" id="modal-check-invites" tabindex="-1" aria-labelledby="checkInvitesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="checkInvitesModalLabel">Pending Invitations</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div id="invitesContainer" class="list-group list-group-flush">
+                            <div class="list-group-item text-center py-3">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mb-0 mt-2">Loading invitations...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description popup modal -->
+        <div class="modal fade" id="descriptionPopup" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="descriptionPopupTitle">Description</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="descriptionPopupContent"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    // Initialize modal
+    const modalEl = document.getElementById('modal-check-invites');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    // Show modal
+    modal.show();
+
+    // Fetch invites from server
+    $.ajax({
+        url: '/check_invites',
+        type: 'GET',
+        success: function(response) {
+            const container = $('#invitesContainer');
+            container.empty();
+
+            if (response.length === 0) {
+                container.html('<div class="text-center py-3"><p>No pending invitations</p></div>');
+                return;
+            }
+
+            // Separate group and event invites
+            const groupInvites = response.filter(invite => invite.type === 'group');
+            const eventInvites = response.filter(invite => invite.type === 'event');
+
+            // Group invite template
+            const groupInviteHTML = (invite) => `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2" id="invite-${invite.id}">
+                <div class="d-flex flex-column flex-grow-1 pe-3" style="min-width: 0;">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary me-2">GROUP</span>
+                        <strong class="text-truncate">${invite.name}</strong>
+                    </div>
+                    <div class="d-flex mt-1">
+                        <small class="text-muted text-truncate description-short" 
+                            style="cursor: pointer;"
+                            data-full-desc="${invite.description}" 
+                            data-title="${invite.name} Description">
+                            <i class="bi bi-info-circle me-1"></i>
+                            ${invite.description.length > 50 ? invite.description.substring(0, 50) + '...' : invite.description}
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex flex-shrink-0">
+                    <button class="btn btn-sm btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="group">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger decline-btn" data-id="${invite.id}" data-type="group">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>`;
+
+            // Event invite template
+            const eventInviteHTML = (invite) => `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2" id="invite-${invite.id}">
+                <div class="d-flex flex-column flex-grow-1 pe-3" style="min-width: 0;">
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-warning text-dark me-2">EVENT</span>
+                        <strong class="text-truncate">${invite.name}</strong>
+                    </div>
+                    <div class="d-flex mt-1">
+                        <small class="text-muted text-truncate description-short" 
+                            style="cursor: pointer;"
+                            data-full-desc="${invite.description}" 
+                            data-title="${invite.name} Description">
+                            <i class="bi bi-info-circle me-1"></i>
+                            ${invite.description.length > 50 ? invite.description.substring(0, 50) + '...' : invite.description}
+                        </small>
+                    </div>
+                    <div class="d-flex flex-wrap mt-1 gap-2">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            ${invite.start_time}
+                        </small>
+                        <small class="text-muted">
+                            <i class="bi bi-person me-1"></i>
+                            ${invite.creator}
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex flex-shrink-0">
+                    <button class="btn btn-sm btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="event">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger decline-btn" data-id="${invite.id}" data-type="event">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>`;
+
+            if (groupInvites.length > 0) {
+                groupInvites.forEach(invite => {
+                    container.append(groupInviteHTML(invite));
+                });
+            }
+
+            if (eventInvites.length > 0) {
+                eventInvites.forEach(invite => {
+                    container.append(eventInviteHTML(invite));
+                });
+            }
+
+            // Setup description click handlers
+            $('.description-short').click(function() {
+                const fullDesc = $(this).data('full-desc');
+                const title = $(this).data('title');
+                
+                $('#descriptionPopupTitle').text(title);
+                $('#descriptionPopupContent').html(fullDesc.replace(/\n/g, '<br>'));
+                
+                const descModal = new bootstrap.Modal(document.getElementById('descriptionPopup'));
+                descModal.show();
+            });
+
+            // Setup accept/decline button handlers
+            $('.accept-btn').click(function() {
+                const id = $(this).data('id');
+                const type = $(this).data('type');
+                respondToInvite(id, type, 'accept');
+            });
+
+            $('.decline-btn').click(function() {
+                const id = $(this).data('id');
+                const type = $(this).data('type');
+                respondToInvite(id, type, 'decline');
+            });
+        },
+        error: function() {
+            $('#invitesContainer').html(
+                '<div class="alert alert-danger">Error loading invitations. Please try again later.</div>'
+            );
+        }
+    });
+
+    function respondToInvite(id, type, action) {
+        $.ajax({
+            url: '/check_invites',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                invite_id: id,
+                invite_type: type,
+                action: action
+            }),
+            success: function(response) {
+                // Remove the invite card from view
+                $(`#invite-${id}`).fadeOut(300, function() {
+                    $(this).remove();
+                    
+                    // Check if no invites left
+                    if ($('#invitesContainer').children().length === 
+                        ($('#invitesContainer h5').length + 1)) { // +1 for potential error message
+                        $('#invitesContainer').append(
+                            '<div class="text-center py-3"><p>No more pending invitations</p></div>'
+                        );
+                    }
+                });
+
+                // Show success message
+                const message = action === 'accept' 
+                    ? 'Invitation accepted successfully' 
+                    : 'Invitation declined';
+                
+                const flashHTML = `
+                <div class="alert alert-dismissible fade show" role="alert"
+                    style="background-color:white; color:black; padding:10px; margin-right:5px;" id="invite-response-success">
+                    <i class="bx bx-check-circle" style="color:lawngreen;"></i>
+                    ${message}
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+                // Auto-remove after 3 seconds
+                setTimeout(function() {
+                    const flashElement = document.getElementById('invite-response-success');
+                    if (flashElement) {
+                        flashElement.style.opacity = '0';
+                        setTimeout(function() {
+                            flashElement.remove();
+                        }, 2000);
+                    }
+                }, 1000);
+            },
+            error: function(response) {
+                alert('Error processing your response. Please try again.');
+            }
+        });
     }
 }

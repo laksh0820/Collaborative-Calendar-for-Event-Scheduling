@@ -71,7 +71,7 @@ def signout():
 # To redirect after group creation
 @app.route('/create_group',methods=['GET','POST'])
 @login_required
-def redirect_create_group():
+def create_group():
     if request.method == 'POST':
         group = request.get_json()
 
@@ -107,6 +107,50 @@ def redirect_create_group():
     
         return jsonify(success=True)
     
+@app.route('/check_invites',methods=['GET','POST'])
+@login_required
+def check_invites():
+    if request.method == 'GET':
+        group_invites = (
+            db.session.query()
+            .select_from(Member)
+            .join(Group, Member.group_id == Group.group_id)
+            .filter(Member.user_id == current_user.user_id)
+            .add_columns(Member.member_id, Group.group_name, Group.description)
+            .all()
+        )
+
+        group_invites_list = [{
+            'id': invite.member_id,
+            'type': 'group',
+            'name': invite.group_name,
+            'description': invite.description
+        } for invite in group_invites]
+
+        event_invites = (
+            db.session.query()
+            .select_from(Participate)
+            .join(Event, Participate.event_id == Event.event_id)
+            .filter(Participate.user_id == current_user.user_id)
+            .add_columns(Participate.participate_id, Event.event_name, Event.description, Event.start_time, Event.end_time, Event.creator)
+            .all()
+        )
+
+        event_invites_list = [{
+            'id': invite.participate_id,
+            'type': 'event',
+            'name': invite.event_name,
+            'description': invite.description,
+            'start_time': invite.start_time,
+            'end_time': invite.end_time,
+            'creator': invite.creator
+        } for invite in event_invites]
+
+        return jsonify(group_invites_list + event_invites_list)
+
+    else:
+        pass
+
 # To get the groups for group-select
 @app.route('/get_groups')
 @login_required
@@ -129,11 +173,6 @@ def get_groups():
     } for group in groups]
     
     return jsonify(groups_list)
-
-@app.route('/check_invites',methods=['GET','POST'])
-@login_required
-def redirect_check_invites():
-    pass
 
 # To get the calendar for the group or individual
 @app.route('/calendar')
