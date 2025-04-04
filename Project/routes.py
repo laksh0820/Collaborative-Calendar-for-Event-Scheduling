@@ -87,7 +87,9 @@ def create_group():
             admin = Member(
                 user_id = current_user.user_id,
                 group_id = newGroup.group_id,
-                permission = 'Admin'
+                read_status = 'Read',
+                permission = 'Admin',
+                status = 'Accepted'
             )
             db.session.add(admin)
             
@@ -116,6 +118,8 @@ def check_invites():
             .select_from(Member)
             .join(Group, Member.group_id == Group.group_id)
             .filter(Member.user_id == current_user.user_id)
+            .filter(Member.status == 'Pending')
+            .order_by(Member.invite_time.desc())
             .add_columns(Member.member_id, Group.group_name, Group.description)
             .all()
         )
@@ -131,8 +135,12 @@ def check_invites():
             db.session.query()
             .select_from(Participate)
             .join(Event, Participate.event_id == Event.event_id)
+            .join(User, Event.creator == User.user_id)
+            .join(Group, Event.group_id == Group.group_id)
             .filter(Participate.user_id == current_user.user_id)
-            .add_columns(Participate.participate_id, Event.event_name, Event.description, Event.start_time, Event.end_time, Event.creator)
+            .filter(Participate.status == 'Pending')
+            .order_by(Participate.invite_time.desc())
+            .add_columns(Participate.participate_id, Event.event_name, Event.description, Event.start_time, Event.end_time, User.name, Group.group_name)
             .all()
         )
 
@@ -143,13 +151,24 @@ def check_invites():
             'description': invite.description,
             'start_time': invite.start_time,
             'end_time': invite.end_time,
-            'creator': invite.creator
+            'creator': invite.name,
+            'group': invite.group_name
         } for invite in event_invites]
 
         return jsonify(group_invites_list + event_invites_list)
 
     else:
-        pass
+        response = request.get_json()
+        try:
+            if response['invite_type'] == 'group':
+                invite = Member.query.filter_by(member_id=response['invite_id']).first()
+            else:
+                invite = Participate.query.filter_by(participate_id=response['invite_id']).first()
+            invite.status = response['status']
+            db.session.commit()
+        except:
+            return "Unable to edit invite status"
+        return jsonify(success=True)
 
 # To get the groups for group-select
 @app.route('/get_groups')
