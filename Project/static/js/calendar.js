@@ -163,27 +163,54 @@ function load_calendar() {
     nowIndicator: true, // Show a line indicating the current time
     select: function (arg) {
       var group_id = document.getElementById('group-select').value;
+      var group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
-      if (group_id == 1) {
-        // Individual Dashboard
-        document.getElementById('participants').style.display = 'none';
+      if (group_permission != 'Viewer') {
+
+        if (group_id == 1) {
+          // Individual Dashboard
+          document.getElementById('participants').style.display = 'none';
+        }
+        else {
+          // Group Dashboard
+          document.getElementById('participants').style.display = 'block';
+          showParticipants();
+        }
+
+        // Reset previous error states
+        $('.is-invalid').removeClass('is-invalid');
+        $('.invalid-feedback').hide();
+
+        // Open the modal when a time range is selected
+        $('#modal-view-event-add').modal('show');
+
+        // Set the start and end times in the form
+        $('#eventStart').val(arg.startStr);
+        $('#eventEnd').val(arg.endStr);
       }
       else {
-        // Group Dashboard
-        document.getElementById('participants').style.display = 'block';
-        showParticipants();
+        // Remove any existing div with the class
+        const existingDivs = document.querySelectorAll('.alert');
+        existingDivs.forEach(div => div.remove());
+
+        // Display the error flash message
+        const flashHTML = `
+        <div class="alert alert-dismissible fade show" role="alert"
+            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="add-event-error">
+            <i class="bx bx-error" style="color:yellow;"></i>
+            Only View Permission
+        </div>`;
+        const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+        // Auto-remove
+        setTimeout(function () {
+          const flashElement = document.getElementById('add-event-error');
+          flashElement.style.opacity = '0';
+          setTimeout(function () {
+            flashElement.remove();
+          }, 2000);
+        }, 1000);
       }
-
-      // Reset previous error states
-      $('.is-invalid').removeClass('is-invalid');
-      $('.invalid-feedback').hide();
-
-      // Open the modal when a time range is selected
-      $('#modal-view-event-add').modal('show');
-
-      // Set the start and end times in the form
-      $('#eventStart').val(arg.startStr);
-      $('#eventEnd').val(arg.endStr);
     },
     loading: function (bool) {
       $('#loading').toggle(bool);
@@ -355,6 +382,10 @@ function load_calendar() {
           // Refetch events when selection changes
           calendar.refetchEvents();
 
+          // Remove any existing div with the class
+          const existingDivs = document.querySelectorAll('.alert');
+          existingDivs.forEach(div => div.remove());
+
           // Display the success flash message
           const flashHTML = `
           <div class="alert alert-dismissible fade show" role="alert"
@@ -374,10 +405,14 @@ function load_calendar() {
           }, 1000);
         },
         error: function () {
+          // Remove any existing div with the class
+          const existingDivs = document.querySelectorAll('.alert');
+          existingDivs.forEach(div => div.remove());
+
           // Display the error flash message
           const flashHTML = `
-          <div class="alert alert-danger alert-dismissible fade show" role="alert"
-              style="color:black; padding:10px; margin-right:5px;" id="event-sub-error">
+          <div class="alert alert-dismissible fade show" role="alert"
+              style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-sub-error">
               <i class="bx bx-error-circle" style="color:red;"></i>
               Error adding event
           </div>`;

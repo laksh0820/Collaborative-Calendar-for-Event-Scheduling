@@ -179,13 +179,15 @@ function create_group() {
                     type: 'GET',
                     success: function (data) {
                         const select = $('#group-select');
-                        select.empty().append('<option value="1">Dashboard</option>');
+                        select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
 
                         $.each(data, function (index, group) {
                             select.append(
                                 $('<option></option>')
+                                    .attr('id', 'group-select-option-' + group.group_id)
                                     .val(group.group_id)
                                     .text(group.name)
+                                    .attr('data-permission', group.permission)
                             );
                         });
                     },
@@ -193,6 +195,10 @@ function create_group() {
                         $('#group-select').html('<option value="" disabled>Error loading groups</option>');
                     }
                 });
+
+                // Remove any existing div with the class
+                const existingDivs = document.querySelectorAll('.alert');
+                existingDivs.forEach(div => div.remove());
 
                 // Display the success flash message
                 const flashHTML = `
