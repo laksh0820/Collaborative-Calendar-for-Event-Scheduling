@@ -174,6 +174,10 @@ function load_calendar() {
         showParticipants();
       }
 
+      // Reset previous error states
+      $('.is-invalid').removeClass('is-invalid');
+      $('.invalid-feedback').hide();
+
       // Open the modal when a time range is selected
       $('#modal-view-event-add').modal('show');
 
