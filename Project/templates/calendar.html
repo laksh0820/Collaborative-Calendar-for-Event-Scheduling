@@ -53,7 +53,7 @@
 						<span className="icon">👥</span>
 						<h5 style="margin-left: 5px;">Participants</h5>
 					</div>
-					<div id="participants-list" class="d-flex flex-wrap mt-1"></div>
+					<div id="participants-list" class="flex-wrap mt-1"></div>
 				</div>
 			</div>
 			<div class="modal-footer">
@@ -62,6 +62,72 @@
 		</div>
 	</div>
 </div>
+<style>
+	.event-body {
+		font-size: 0.875rem;
+		color: #212529;
+	}
+
+	.no-description {
+		color: #6b7280;
+	}
+
+	#participants-list {
+		display: flex;
+		flex-direction: column;
+		padding-left: 1rem;
+	}
+
+	.participant {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		transition: background-color 0.2s;
+	}
+
+	.participant:hover {
+		background-color: #f8f9fa;
+	}
+
+	.avatar {
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: white;
+		font-weight: 600;
+		font-size: 0.875rem;
+		flex-shrink: 0;
+	}
+
+	.participant-info {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.participant-info .name {
+		margin: 0;
+		font-weight: 500;
+		font-size: 0.875rem;
+		color: #212529;
+	}
+
+	.participant-info .email {
+		margin: 0;
+		font-size: 0.75rem;
+		color: #6b7280;
+	}
+
+	.text-muted {
+		padding-left: 0.7rem;
+		color: #6b7280 !important;
+		font-size: 14px;
+	}
+</style>
 
 <div id="modal-view-event-add" class="modal modal-top fade calendar-modal">
 	<div class="modal-dialog modal-dialog-centered">

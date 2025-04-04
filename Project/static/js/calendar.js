@@ -1,4 +1,38 @@
 function load_calendar() {
+  // Helper function to get initials from name
+  function getInitials(name) {
+    if (!name) return '';
+    const parts = name.split(' ');
+    return parts.map(part => part[0].toUpperCase()).join('').substring(0, 2);
+  }
+
+  // Helper function to generate consistent color from name
+  function getAvatarColor(name) {
+    if (!name) return '#6c757d'; // Default gray if no name
+
+    // Simple hash function to generate consistent color
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Predefined set of pleasant colors
+    const colors = [
+      '#4e79a7', // blue
+      '#f28e2b', // orange
+      '#e15759', // red
+      '#76b7b2', // teal
+      '#59a14f', // green
+      '#edc948', // yellow
+      '#b07aa1', // purple
+      '#ff9da7', // pink
+      '#9c755f', // brown
+      '#bab0ac'  // gray
+    ];
+
+    return colors[Math.abs(hash) % colors.length];
+  }
+
   var calendarEl = document.getElementById('calendar');
   var calendar = new FullCalendar.Calendar(calendarEl, {
     timeZone: 'local',
@@ -50,7 +84,8 @@ function load_calendar() {
       // $('.event-start').html(info.event.start.toISOString().replace('T',' ').substring(0,16));
       // $('.event-end').html(info.event.end.toISOString().replace('T',' ').substring(0,16));
       $('.event-body').html(
-        info.event.extendedProps?.description || 'No description'
+        info.event.extendedProps?.description ||
+        '<span class="no-description">No description</span>'
       );
 
       var group_id = document.getElementById('group-select').value;
@@ -69,21 +104,38 @@ function load_calendar() {
         if (participants && participants.length > 0) {
           // Create badges for each participant
           participants.forEach(participant => {
-            const badge = document.createElement('span');
-            badge.className = 'badge d-flex align-items-center mb-2';
-            // badge.style.backgroundColor = 'rgb(30, 18, 82)';
-            badge.style.color = 'black';
-            badge.style.padding = '0.5rem 1rem';
-            badge.style.borderRadius = '0.25rem';
+            // Create the participant container
+            const participantElement = document.createElement('div');
+            participantElement.className = 'participant';
 
-            // Include both name and email if available
-            let badgeContent = participant.name || '';
-            if (participant.email) {
-              badgeContent += badgeContent ? ` (${participant.email})` : participant.email;
-            }
+            // Create avatar element with colored background
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.style.backgroundColor = getAvatarColor(participant.name); // Function to generate color
+            avatar.textContent = getInitials(participant.name); // Function to get initials
+            participantElement.appendChild(avatar);
 
-            badge.textContent = badgeContent;
-            participantsList.appendChild(badge);
+            // Create participant info container
+            const infoContainer = document.createElement('div');
+            infoContainer.className = 'participant-info';
+
+            // Create name element
+            const nameElement = document.createElement('p');
+            nameElement.className = 'name';
+            nameElement.textContent = participant.name || '';
+            infoContainer.appendChild(nameElement);
+
+            // Create email element
+            const emailElement = document.createElement('p');
+            emailElement.className = 'email';
+            emailElement.textContent = participant.email;
+            infoContainer.appendChild(emailElement);
+
+            // Add info container to participant element
+            participantElement.appendChild(infoContainer);
+
+            // Add participant to the list
+            participantsList.appendChild(participantElement);
           });
         } else {
           // Show message if no participants
@@ -280,6 +332,7 @@ function load_calendar() {
             start: eventStart,
             description: description,
             end: eventEnd,
+            participants: participants
           });
 
           // Display the success flash message
