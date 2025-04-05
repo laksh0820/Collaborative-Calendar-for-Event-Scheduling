@@ -45,15 +45,18 @@
 	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header" style="justify-content: space-between;">
-				<h4 class="modal-title"><span class="event-icon"></span><span class="event-title"
-						id="model-view-title-editable" contenteditable="true"></span></h4>
+				<h4 class="modal-title" style="max-width: 95%;">
+					<span class="event-icon"></span>
+					<span class="event-title" style="max-width: 95%; overflow-wrap: break-word;" id="model-view-title-editable" contenteditable="true"></span>
+				</h4>
 				<button type="button" data-bs-dismiss="modal" id="closeViewEvent">×</button>
 			</div>
 			<div class="modal-body">
 				<div class="description" style="display: flex; margin-bottom: 1.5rem;">
 					<span className="icon">📅</span>
-					<div class="event-body" style="margin-left: 5px;" id="model-view-description-editable"
-						contenteditable="true"></div>
+					<div class="event-body" style="margin-left: 5px; max-width: 95%; min-width: 95%; overflow-wrap: break-word;"
+					id="model-view-description-editable" onfocus="this.textContent === 'No description available' && (this.textContent = '')"
+					onblur="!this.textContent.trim() && (this.textContent = 'No description available')" contenteditable="true"></div>
 				</div>
 				<!-- Participants Section -->
 				<div id="participants-section" class="mt-2">
