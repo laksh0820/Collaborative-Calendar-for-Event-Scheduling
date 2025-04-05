@@ -715,7 +715,25 @@ function load_calendar() {
 
     // Fetch group data
     let groupId = document.getElementById('group-select').value;
-    if (groupId == 1) return;
+    if (groupId == 1) {
+      const settingsBtn = document.querySelector('#group-settings');
+      settingsBtn.setAttribute('data-bs-toggle', 'tooltip');
+      settingsBtn.setAttribute('data-bs-placement', 'top');
+      settingsBtn.setAttribute('title', 'Please select a group');
+
+      const tooltip = new bootstrap.Tooltip(settingsBtn, {
+        trigger: 'manual'
+      });
+      tooltip.show();
+      
+      setTimeout(() => {
+        tooltip.hide();
+        settingsBtn.removeAttribute('data-bs-toggle');
+        settingsBtn.removeAttribute('data-bs-placement');
+        settingsBtn.removeAttribute('title');
+      }, 2000);
+      return;
+    }
     let isAdmin = false;
     var curr_email;
     $.ajax({
@@ -765,7 +783,7 @@ function load_calendar() {
                           </div>
                           <div class="mb-3">
                               <label class="form-label text-body-secondary fw-bold">Description</label>
-                              <div id="groupDescContainer" class="editable-field" style="min-height: 38px;">
+                              <div id="groupDescContainer" class="editable-field" style="min-height: 38px; overflow-wrap: break-word;">
                                   <span id="groupDescDisplay" class="editable-text"></span>
                                   <textarea class="form-control d-none" id="editGroupDescription"></textarea>
                               </div>
