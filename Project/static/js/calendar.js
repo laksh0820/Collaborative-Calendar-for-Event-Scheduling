@@ -6,6 +6,9 @@ const calendarResources = {
   tooltips: []
 };
 
+// For Check Invite
+let checkInvt = document.querySelector('#check-invites-link');
+
 // Helper functions
 function getInitials(name) {
   if (!name) return '';
@@ -193,21 +196,66 @@ function load_calendar() {
     modal.show();
   }
 
-  function setupParticipantsSection(info, modal, permission) {
+  function refreshParticipantsList(info, permission) {
     const participantsList = document.getElementById('participants-list');
+    const divToRemove = document.getElementById('ssa');
+    if (divToRemove) divToRemove.remove();
+    const divToRemove2 = document.getElementById('ssd');
+    if (divToRemove2) divToRemove2.remove();
+    const divToRemove3 = document.getElementById('ssp');
+    if (divToRemove3) divToRemove3.remove();
     participantsList.innerHTML = '';
 
     const participants = info.event.extendedProps.participants || [];
     if (participants.length > 0) {
-      participants.forEach(participant => {
-        renderParticipant(info, participant, participants.length > 1, permission);
-      });
+      // Accepted participant
+      const accepted_participants = info.event.extendedProps.accepted_participants || []
+      if (accepted_participants.length > 0) {
+        const status_section = document.createElement('div');
+        status_section.className = "status-section accepted";
+        status_section.id = "ssa";
+        status_section.innerHTML = `<h6>Accepted (${accepted_participants.length})</h6>`;
+        accepted_participants.forEach(participant => {
+          renderParticipant(info, participant, participants.length > 1, permission, status_section);
+        });
+        participantsList.appendChild(status_section);
+      }
+
+      // Declined participant
+      const declined_participants = info.event.extendedProps.declined_participants || []
+      if (declined_participants.length > 0) {
+        const status_section = document.createElement('div');
+        status_section.className = "status-section declined";
+        status_section.id = "ssd";
+        status_section.innerHTML = `<h6>Declined (${declined_participants.length})</h6>`;
+        declined_participants.forEach(participant => {
+          renderParticipant(info, participant, participants.length > 1, permission, status_section);
+        });
+        participantsList.appendChild(status_section);
+      }
+
+      // Pending participant
+      const pending_participants = info.event.extendedProps.pending_participants || []
+      if (pending_participants.length > 0) {
+        const status_section = document.createElement('div');
+        status_section.className = "status-section pending";
+        status_section.id = "ssp";
+        status_section.innerHTML = `<h6>Pending (${pending_participants.length})</h6>`;
+        pending_participants.forEach(participant => {
+          renderParticipant(info, participant, participants.length > 1, permission, status_section);
+        });
+        participantsList.appendChild(status_section);
+      }
     } else {
       const noParticipants = document.createElement('p');
       noParticipants.textContent = 'No participants';
       noParticipants.className = 'text-muted';
       participantsList.appendChild(noParticipants);
     }
+  }
+
+  function setupParticipantsSection(info, modal, permission) {
+    refreshParticipantsList(info, permission);
 
     if (permission !== 'Viewer') {
       // Participant select focus handler
@@ -285,8 +333,7 @@ function load_calendar() {
     }
   }
 
-  function renderParticipant(info, participant, showRemoveButton, permission) {
-    const participantsList = document.getElementById('participants-list');
+  function renderParticipant(info, participant, showRemoveButton, permission, externalDiv) {
     const participantElement = document.createElement('div');
     participantElement.className = 'participant';
     participantElement.id = `participant-email-${participant.email}`;
@@ -331,7 +378,7 @@ function load_calendar() {
       });
     }
 
-    participantsList.appendChild(participantElement);
+    externalDiv.appendChild(participantElement);
   }
 
   function saveViewEvent(event) {
@@ -575,7 +622,16 @@ function load_calendar() {
 
           participants.push(data);
           info.event.setExtendedProp('participants', participants);
-          renderParticipant(info, data, true);
+
+          // Update the info for pending participants
+          const pending_participants = info.event.extendedProps.pending_participants || [];
+          pending_participants.push(data);
+          info.event.setExtendedProp('pending_participants', pending_participants);
+
+          const group_id = document.getElementById('group-select').value;
+          const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+          refreshParticipantsList(info, group_permission);
+
           input.value = '';
         },
         error: function () {
@@ -601,6 +657,28 @@ function load_calendar() {
             document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
           });
         }
+
+        const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
+        const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
+        const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
+
+        if (inAccepted) {
+          const accepted_participants = info.event.extendedProps.accepted_participants || [];
+          const updated_accepted_participants = accepted_participants.filter(p => p.email !== email);
+          info.event.setExtendedProp('accepted_participants', updated_accepted_participants);
+        } else if (inDecline) {
+          const declined_participants = info.event.extendedProps.declined_participants || [];
+          const updated_declined_participants = declined_participants.filter(p => p.email !== email);
+          info.event.setExtendedProp('declined_participants', updated_declined_participants);
+        } else {
+          const pending_participants = info.event.extendedProps.pending_participants || [];
+          const updated_pending_participants = pending_participants.filter(p => p.email !== email);
+          info.event.setExtendedProp('pending_participants', updated_pending_participants);
+        }
+
+        const group_id = document.getElementById('group-select').value;
+        const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+        refreshParticipantsList(info, group_permission);
       },
       error: function () {
         showFlashMessage('error', 'Error removing participant');
@@ -688,6 +766,278 @@ function load_calendar() {
 
         // Add event listener to remove button
         badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
+      });
+    }
+  }
+
+  checkInvt.addEventListener('click', check_invites);
+  // Create check invite modal functionality
+  function check_invites() {
+    // Create modal HTML if it doesn't exist
+    if (!document.getElementById('modal-check-invites')) {
+      const modalHTML = `
+      <div class="modal fade" id="modal-check-invites" tabindex="-1" aria-labelledby="checkInvitesModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="checkInvitesModalLabel">Pending Invitations</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-0">
+                      <div id="invitesContainer" class="list-group list-group-flush">
+                          <div class="list-group-item text-center py-3">
+                              <div class="spinner-border" role="status">
+                                  <span class="visually-hidden">Loading...</span>
+                              </div>
+                              <p class="mb-0 mt-2">Loading invitations...</p>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <!-- Description popup modal -->
+      <div class="modal fade" id="descriptionPopup" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="descriptionPopupTitle">Description</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body" id="descriptionPopupContent" style="overflow-wrap: break-word; max-height: 60vh; overflow-y: auto;"></div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                  </div>
+              </div>
+          </div>
+      </div>`;
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    // Initialize modal
+    const modalEl = document.getElementById('modal-check-invites');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    // Show modal
+    modal.show();
+
+    // Fetch invites from server
+    $.ajax({
+      url: '/check_invites',
+      type: 'GET',
+      success: function (response) {
+        const container = $('#invitesContainer');
+        container.empty();
+
+        if (response.length === 0) {
+          container.html('<div class="text-center py-3"><p>No pending invitations</p></div>');
+          return;
+        }
+
+        // Separate group and event invites
+        const groupInvites = response.filter(invite => invite.type === 'group');
+        const eventInvites = response.filter(invite => invite.type === 'event');
+
+        // Group invite template
+        const groupInviteHTML = (invite) => `
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2" id="invite-${invite.id}">
+              <div class="d-flex flex-column flex-grow-1 pe-3" style="min-width: 0;">
+                  <div class="d-flex align-items-center">
+                      <span class="badge bg-primary me-2">GROUP</span>
+                      <strong class="text-truncate">${invite.name}</strong>
+                  </div>
+                  <div class="d-flex mt-1">
+                      <small class="text-muted text-truncate description-short" 
+                          style="cursor: pointer;"
+                          data-full-desc="${invite.description}" 
+                          data-title="${invite.name} Description">
+                          <i class="bi bi-info-circle me-1"></i>
+                          ${invite.description.length > 50 ? invite.description.substring(0, 50) + '...' : invite.description}
+                      </small>
+                  </div>
+              </div>
+              <div class="d-flex flex-shrink-0">
+                  <button class="btn btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="group">
+                      <i class="bx bx-check" style="font-size:1.5rem; font-weight:bold;"></i>
+                  </button>
+                  <button class="btn btn-outline-danger decline-btn" data-id="${invite.id}" data-type="group">
+                      <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
+                  </button>
+              </div>
+          </div>`;
+
+        // Event invite template
+        const eventInviteHTML = (invite) => `
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2" id="invite-${invite.id}">
+              <div class="d-flex flex-column flex-grow-1 pe-3" style="min-width: 0;">
+                  <div class="d-flex align-items-center">
+                      <span class="badge bg-warning text-dark me-2">EVENT</span>
+                      <strong class="text-truncate">${invite.name}</strong>
+                      <span class="text-muted ms-2">
+                          <i class="bx bx-group"></i>
+                          ${invite.group}
+                      </span>
+                  </div>
+                  <div class="d-flex mt-1">
+                      <small class="text-muted text-truncate description-short" 
+                          style="cursor: pointer;"
+                          data-full-desc="${invite.description}" 
+                          data-title="${invite.name} Description">
+                          <i class="bi bi-info-circle me-1"></i>
+                          ${invite.description.length > 50 ? invite.description.substring(0, 50) + '...' : invite.description}
+                      </small>
+                  </div>
+                  <div class="d-flex flex-wrap mt-1 gap-2">
+                      <small class="text-muted">
+                          <i class="bi bi-clock me-1"></i>
+                          ${invite.start_time} - ${invite.end_time}
+                      </small>
+                      <small class="text-muted">
+                          <i class="bi bi-person me-1"></i>
+                          ${invite.creator}
+                      </small>
+                  </div>
+              </div>
+              <div class="d-flex flex-shrink-0">
+                  <button class="btn btn-sm btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="event">
+                      <i class="bx bx-check" style="font-size:1.5rem; font-weight:bold;"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger decline-btn" data-id="${invite.id}" data-type="event">
+                      <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
+                  </button>
+              </div>
+          </div>`;
+
+        if (groupInvites.length > 0) {
+          groupInvites.forEach(invite => {
+            if (invite.description.length == 0)
+              invite.description = "No description";
+            container.append(groupInviteHTML(invite));
+          });
+        }
+
+        if (eventInvites.length > 0) {
+          eventInvites.forEach(invite => {
+            if (invite.description.length == 0)
+              invite.description = "No description";
+            container.append(eventInviteHTML(invite));
+          });
+        }
+
+        // Setup description click handlers
+        $('.description-short').click(function () {
+          const fullDesc = $(this).data('full-desc');
+          const title = $(this).data('title');
+
+          $('#descriptionPopupTitle').text(title);
+          $('#descriptionPopupContent').html(fullDesc.replace(/\n/g, '<br>'));
+
+          const descModal = new bootstrap.Modal(document.getElementById('descriptionPopup'));
+          descModal.show();
+        });
+
+        // Setup accept/decline button handlers
+        $('.accept-btn').click(function () {
+          const id = $(this).data('id');
+          const type = $(this).data('type');
+          respondToInvite(id, type, 'Accepted');
+        });
+
+        $('.decline-btn').click(function () {
+          const id = $(this).data('id');
+          const type = $(this).data('type');
+          respondToInvite(id, type, 'Declined');
+        });
+      },
+      error: function () {
+        $('#invitesContainer').html(
+          '<div class="alert alert-danger">Error loading invitations. Please try again later.</div>'
+        );
+      }
+    });
+
+    function respondToInvite(id, type, status) {
+      $.ajax({
+        url: '/check_invites',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          invite_id: id,
+          invite_type: type,
+          status: status
+        }),
+        success: function (response) {
+          // Update the group-select 
+          $.ajax({
+            url: '/get_groups',
+            type: 'GET',
+            success: function (data) {
+              const select = $('#group-select');
+              select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+
+              $.each(data, function (index, group) {
+                select.append(
+                  $('<option></option>')
+                    .attr('id', 'group-select-option-' + group.group_id)
+                    .val(group.group_id)
+                    .text(group.name)
+                    .attr('data-permission', group.permission)
+                );
+              });
+            },
+            error: function () {
+              $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+            }
+          });
+
+          // Refresh the events
+          calendar.removeAllEvents();
+          calendar.refetchEvents();
+
+          // Remove the invite from view
+          $(`#invite-${id}`).fadeOut(300, function () {
+            $(this).remove();
+
+            // Check if no invites left
+            const $invites = $('#invitesContainer .list-group-item[id^="invite-"]');
+            if ($invites.length === 0) {
+              $('#invitesContainer').append(
+                '<div class="text-center py-3"><p>No pending invitations</p></div>'
+              );
+            }
+          });
+
+          // Show success message
+          const message = status === 'Accepted'
+            ? 'Invitation accepted successfully'
+            : 'Invitation declined';
+
+          const flashHTML = `
+              <div class="alert alert-dismissible fade show" role="alert"
+                  style="background-color:white; color:black; padding:10px; margin-right:5px;" id="invite-response-success">
+                  <i class="bx bx-check-circle" style="color:lawngreen;"></i>
+                  ${message}
+              </div>`;
+          document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+          // Auto-remove after 3 seconds
+          setTimeout(function () {
+            const flashElement = document.getElementById('invite-response-success');
+            if (flashElement) {
+              flashElement.style.opacity = '0';
+              setTimeout(function () {
+                flashElement.remove();
+              }, 2000);
+            }
+          }, 1000);
+        },
+        error: function (response) {
+          alert('Error processing your response. Please try again.');
+        }
       });
     }
   }
