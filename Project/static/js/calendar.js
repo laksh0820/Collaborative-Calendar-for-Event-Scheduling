@@ -75,7 +75,7 @@ function showFlashMessage(type, message) {
   const timeoutId = setTimeout(() => {
     flashElement.style.opacity = '0';
     setTimeout(() => flashElement.remove(), 2000);
-  }, 3000);
+  }, 1000);
   calendarResources.timeouts.push(timeoutId);
 }
 
