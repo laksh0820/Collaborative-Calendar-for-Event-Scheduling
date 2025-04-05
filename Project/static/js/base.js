@@ -611,7 +611,7 @@ function get_notifications() {
 
             // No notifications available
             if (response.length === 0) {
-                notificationsContainer.html('<div class="text-center py-3"><p>No pending invitations</p></div>');
+                notificationsContainer.html('<div class="text-center py-3"><p>No unread notifications</p></div>');
                 return;
             }
 
