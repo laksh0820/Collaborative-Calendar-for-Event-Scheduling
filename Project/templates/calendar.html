@@ -50,11 +50,16 @@
 <div id="modal-view-event" class="modal modal-top fade calendar-modal">
 	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
+			<div class="modal-header" style="justify-content: space-between;">
+				<h4 class="modal-title"><span class="event-icon"></span><span class="event-title"
+						id="model-view-title-editable" contenteditable="true"></span></h4>
+				<button type="button" data-bs-dismiss="modal" id="closeViewEvent">×</button>
+			</div>
 			<div class="modal-body">
-				<h4 class="modal-title"><span class="event-icon"></span><span class="event-title"></span></h4>
-				<div class="description" style="display: flex;">
+				<div class="description" style="display: flex; margin-bottom: 1.5rem;">
 					<span className="icon">📅</span>
-					<p class="event-body" style="margin-left: 5px;"></p>
+					<div class="event-body" style="margin-left: 5px;" id="model-view-description-editable"
+						contenteditable="true"></div>
 				</div>
 				<!-- Participants Section -->
 				<div id="participants-section" class="mt-2">
@@ -64,15 +69,35 @@
 					</div>
 					<div id="participants-list" class="flex-wrap mt-1"></div>
 				</div>
+				<div class="modal-view-add-participant">
+					<select type="email" id="updateParticipantSelect" placeholder="Email"
+						class="modal-view-participant-select">
+						<option value="" disabled selected>Select a participant</option>
+					</select>
+					<button id="modal-view-add-participant" class="modal-view-add-button">Add Participant</button>
+				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+				<button type="submit" class="btn btn-primary" id="saveViewEvent">Save Changes</button>
 				<button type="submit" class="btn btn-primary" id="removeEvent">Remove Event</button>
 			</div>
 		</div>
 	</div>
 </div>
 <style>
+	#closeViewEvent {
+		font-size: 1.5rem;
+		color: #6b7280;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.5rem;
+	}
+
+	#closeViewEvent:hover {
+		color: #374151;
+	}
+
 	.event-body {
 		font-size: 0.875rem;
 		color: #212529;
@@ -117,6 +142,7 @@
 	.participant-info {
 		display: flex;
 		flex-direction: column;
+		flex-grow: 1;
 	}
 
 	.participant-info .name {
@@ -136,6 +162,68 @@
 		padding-left: 0.7rem;
 		color: #6b7280 !important;
 		font-size: 14px;
+	}
+
+	.modal-view-add-participant {
+		margin-top: 1rem;
+		display: flex;
+		gap: 0.5rem;
+		padding-left: 1.6rem;
+		font-size: 0.84rem;
+	}
+
+	.modal-view-participant-select {
+		padding: 0.5rem;
+		border: 1px solid #e5e7eb;
+		border-radius: 6px;
+		flex-grow: 1;
+		font-size: 0.84rem;
+	}
+
+	.modal-view-save-button {
+		background: #1e40af;
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		font-weight: 500;
+		transition: background-color 0.2s;
+	}
+
+	.modal-view-save-button:hover {
+		background: #1e3a8a;
+	}
+
+	.modal-view-add-button {
+		background: #059669;
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		font-weight: 500;
+		transition: background-color 0.2s;
+	}
+
+	.modal-view-participant-remove-button {
+		background: #dc2626;
+		color: white;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.875rem;
+	}
+
+	.modal-view-participant-remove-button:hover {
+		background: #b91c1c;
+	}
+
+	#model-view-description-editable:focus {
+		outline: 2px solid #3b82f6;
+		border-radius: 4px;
+		padding: 2px;
+	}
+
+	#model-view-title-editable:focus {
+		outline: 2px solid #3b82f6;
+		border-radius: 4px;
+		padding: 2px;
 	}
 </style>
 

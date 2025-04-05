@@ -289,7 +289,6 @@ def get_members(group_id):
         .select_from(User)
         .join(Member, Member.user_id == User.user_id)
         .filter(Member.group_id == group_id)
-        .filter(User.user_id != current_user.user_id)
         .add_columns(User.name,User.email)
         .all()
     )
@@ -381,7 +380,7 @@ def add_event():
     try:
         db.session.add(newEvent)
         db.session.commit()
-        
+            
         for participantEmail in participantsEmail:
             participant = Participate()
             participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
@@ -419,3 +418,56 @@ def remove_event(event_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/update_participate/<int:event_id>/<email>', methods=['PUT'])
+@login_required
+def update_participate(event_id,email):
+    user = User.query.filter_by(email=email).first()
+    participant = Participate()
+    participant.user_id = user.user_id
+    participant.event_id = event_id
+    participant.status = 'Pending'
+    
+    try:
+        db.session.add(participant)
+        db.session.commit()
+        return jsonify({'name': f'{user.name}','email':f'{user.email}'}), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/remove_participate/<int:event_id>/<email>', methods=['DELETE'])
+@login_required
+def remove_participate(event_id,email):
+    user = User.query.filter_by(email=email).first()
+    participant = Participate.query.filter_by(user_id=user.user_id,event_id=event_id).first()
+    
+    if participant:
+        try:
+            db.session.delete(participant)
+            db.session.commit()
+            return jsonify(success=True)
+        
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify(success=True)
+
+@app.route('/update_event/<int:event_id>', methods=['PUT'])
+@login_required
+def update_event(event_id):
+    new_event = request.get_json()
+    
+    event = Event.query.filter_by(event_id=event_id).first()
+    event.event_name = new_event['title']
+    event.description = new_event['description']
+    
+    try:
+        db.session.commit() 
+        return jsonify(success=True)
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
