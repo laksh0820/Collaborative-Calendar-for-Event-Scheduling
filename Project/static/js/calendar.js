@@ -813,10 +813,15 @@ function load_calendar() {
       const modalEl = document.getElementById('modal-edit-group');
       const modal = new bootstrap.Modal(modalEl);
 
-      // Populate initial data
-      $('#groupNameDisplay').text(originalData.name);
+    // Populate initial data
+    $('#groupNameDisplay').text(originalData.name);
+    if (originalData.description) {
       $('#groupDescDisplay').text(originalData.description);
-      renderMembersList();
+    }
+    else {
+      $('#groupDescDisplay').text("No description");
+    }
+    renderMembersList();
 
       // Show modal after data loads
       modal.show();

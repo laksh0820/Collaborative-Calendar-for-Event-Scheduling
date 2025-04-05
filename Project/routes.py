@@ -198,6 +198,7 @@ def check_invites():
             else:
                 invite = Participate.query.filter_by(participate_id=response['invite_id']).first()
             invite.status = response['status']
+            invite.read_status = 'Read'
             db.session.commit()
         except:
             return "Unable to edit invite status"

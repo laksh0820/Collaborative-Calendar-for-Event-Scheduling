@@ -353,14 +353,14 @@ function check_invites() {
         </div>
 
         <!-- Description popup modal -->
-        <div class="modal fade" id="descriptionPopup" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
+        <div class="modal fade" id="descriptionPopup" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="descriptionPopupTitle">Description</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body" id="descriptionPopupContent"></div>
+                    <div class="modal-body" id="descriptionPopupContent" style="overflow-wrap: break-word; max-height: 60vh; overflow-y: auto;"></div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                     </div>
@@ -466,12 +466,16 @@ function check_invites() {
 
             if (groupInvites.length > 0) {
                 groupInvites.forEach(invite => {
+                    if(invite.description.length == 0)
+                        invite.description = "No description";
                     container.append(groupInviteHTML(invite));
                 });
             }
 
             if (eventInvites.length > 0) {
                 eventInvites.forEach(invite => {
+                    if(invite.description.length == 0)
+                        invite.description = "No description";
                     container.append(eventInviteHTML(invite));
                 });
             }
