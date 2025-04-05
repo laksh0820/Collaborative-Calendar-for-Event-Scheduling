@@ -68,7 +68,7 @@ def signout():
     flash("Logged out Successfully",'success')
     return redirect(url_for('signin'))
 
-# To redirect after group creation
+# Group creation
 @app.route('/create_group',methods=['GET','POST'])
 @login_required
 def create_group():
@@ -108,7 +108,8 @@ def create_group():
             return "Unable to add new group to the database"
     
         return jsonify(success=True)
-    
+
+# Group and Event Invites
 @app.route('/check_invites',methods=['GET','POST'])
 @login_required
 def check_invites():
@@ -289,7 +290,7 @@ def return_data(group_id):
             })
     return jsonify(events_data)
 
-# To get the memebers of the group
+# To get the members of the group
 @app.route('/members/<group_id>')
 @login_required
 def get_members(group_id):
@@ -308,6 +309,50 @@ def get_members(group_id):
         'email': member.email
     } for member in members]
     return jsonify(members_list)
+
+# To get, delete or update the group info
+@app.route('/group_info/<group_id>', methods=['GET','DELETE','PUT'])
+@login_required
+def get_info(group_id):
+    group_id = int(group_id)
+    group = Group.query.filter_by(group_id=group_id).first()
+
+    if request.method == 'GET':
+        members = (
+            db.session.query()
+            .select_from(User)
+            .join(Member, Member.user_id == User.user_id)
+            .filter(Member.group_id == group_id)
+            .add_columns(User.user_id, User.name, User.email, Member.permission)
+            .all()
+        )
+        members_list = [{
+            'email': member.email,
+            'role': member.permission
+        } for member in members]
+
+        authorization = any(member for member in members if member.user_id == current_user.user_id and member.permission == 'Admin')
+
+        return jsonify({
+            'name': group.group_name,
+            'description': group.description,
+            'members': members_list,
+            'authorization': authorization
+        })
+    
+    elif request.method == 'DELETE':
+        try:
+            members = Member.query.filter_by(group_id=group_id).all()
+            for member in members:
+                db.session.delete(member)
+            db.session.delete(group)
+            db.session.commit()
+        except:
+            return "Unable to delete group from the database"
+        return jsonify(success=True)
+
+    else:
+        pass
 
 # To add an event
 @app.route('/add_event',methods=['POST'])

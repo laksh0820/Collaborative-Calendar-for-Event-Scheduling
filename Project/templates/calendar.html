@@ -22,15 +22,18 @@
 	<h2 class="mb-4">Calendar</h2>
 	<div class="card">
 		<div class="card-body p-0">
-			<div id="calendar-controls"
-				style="margin-bottom: 10px; width: 50%; position: relative;left: 50%;transform: translateX(-50%);">
-				<select id="group-select" class="form-control">
+			<div id="calendar-controls" style="margin-bottom: 10px; width: 50%; position: relative; left: 50%; transform: translateX(-50%); text-align: center;">
+				<select id="group-select" class="form-control mb-2">
 					<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>
 					{% for group in groups %}
 					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}"
 						data-permission="{{ group.permission }}">{{ group.group_name }}</option>
 					{% endfor %}
 				</select>
+				<a id="group-settings">
+					<i class="bx bx-cog"></i>
+					Group Settings
+				</a>
 			</div>
 			<div id="calendar"></div>
 		</div>

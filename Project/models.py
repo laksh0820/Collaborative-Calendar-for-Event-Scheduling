@@ -75,6 +75,3 @@ class Member(db.Model):
         db.CheckConstraint("read_status IN ('Read', 'Unread')"),
         db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
     )
-
-# You have been added to Group Name
-# You have been added to Event Name
