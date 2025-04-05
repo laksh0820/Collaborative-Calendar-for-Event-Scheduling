@@ -198,8 +198,11 @@ def check_invites():
                 invite = Member.query.filter_by(member_id=response['invite_id']).first()
             else:
                 invite = Participate.query.filter_by(participate_id=response['invite_id']).first()
-            invite.status = response['status']
-            invite.read_status = 'Read'
+            if response['status'] == 'Declined':
+                db.session.delete(invite)
+            else:
+                invite.status = response['status']
+                invite.read_status = 'Read'
             db.session.commit()
         except:
             db.session.rollback()
@@ -585,7 +588,7 @@ def get_info(group_id):
             
             # Handle member changes
             current_members = {m.user_id: m for m in Member.query.filter_by(group_id=group_id).all()}
-            users_cache = {}  # Cache user lookups
+            users_cache = {}
             
             # Process new members
             for new_mem in group_info['new_members']:
@@ -617,6 +620,17 @@ def get_info(group_id):
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
                 if user and user.user_id in current_members:
+                    participations = (
+                        Participate.query
+                        .join(Event)
+                        .filter(
+                            Participate.user_id == user.user_id,
+                            Event.group_id == group_id
+                        )
+                        .all()
+                    )
+                    for participation in participations:
+                        db.session.delete(participation)
                     db.session.delete(current_members[user.user_id])
             
             db.session.commit()
