@@ -438,6 +438,29 @@ function check_invites() {
                 status: status
             }),
             success: function(response) {
+                // Update the group-select 
+                $.ajax({
+                    url: '/get_groups',
+                    type: 'GET',
+                    success: function (data) {
+                        const select = $('#group-select');
+                        select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
+
+                        $.each(data, function (index, group) {
+                            select.append(
+                                $('<option></option>')
+                                    .attr('id', 'group-select-option-' + group.group_id)
+                                    .val(group.group_id)
+                                    .text(group.name)
+                                    .attr('data-permission', group.permission)
+                            );
+                        });
+                    },
+                    error: function () {
+                        $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+                    }
+                });
+                
                 // Remove the invite from view
                 $(`#invite-${id}`).fadeOut(300, function() {
                     $(this).remove();

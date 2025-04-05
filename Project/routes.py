@@ -179,7 +179,7 @@ def get_groups():
         .select_from(Group)
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id)
+        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
         .add_columns(Group.group_id,Group.group_name,Member.permission)
         .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
@@ -202,7 +202,7 @@ def get_calendar():
         .select_from(Group)
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id)
+        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
         .add_columns(Group.group_id,Group.group_name,Member.permission)
         .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
@@ -232,7 +232,18 @@ def return_data(group_id):
                 return "Unable to add group 1 to the database"
         
         # Get all the events from the database created by current user
-        events = current_user.created_events
+        events = []
+        for event in current_user.created_events:
+            if event.group_id == 1:
+                events.append(event)
+        group_events = (
+            db.session.query(Event)
+            .join(Participate, Event.event_id == Participate.event_id)
+            .filter(Participate.user_id == current_user.user_id)
+            .all()
+        )
+        for event in group_events:
+            events.append(event)
         
         events_data = []
         for event in events:
@@ -287,7 +298,7 @@ def get_members(group_id):
         db.session.query()
         .select_from(User)
         .join(Member, Member.user_id == User.user_id)
-        .filter(Member.group_id == group_id)
+        .filter(Member.group_id == group_id, Member.status == 'Accepted')
         .add_columns(User.name,User.email)
         .all()
     )

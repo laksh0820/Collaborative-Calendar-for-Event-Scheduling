@@ -41,8 +41,6 @@
 	Error getting data from <code>/data</code> endpoint.
 </div>
 
-<div id='loading'>loading...</div>
-
 <!-- calendar modal -->
 <div id="modal-view-event" class="modal modal-top fade calendar-modal">
 	<div class="modal-dialog modal-dialog-centered">
@@ -66,7 +64,7 @@
 					</div>
 					<div id="participants-list" class="flex-wrap mt-1"></div>
 				</div>
-				<div class="modal-view-add-participant">
+				<div class="modal-view-add-participant" id="modal-view-add-participant-select">
 					<select type="email" id="updateParticipantSelect" placeholder="Email"
 						class="modal-view-participant-select">
 						<option value="" disabled selected>Select a participant</option>
@@ -77,6 +75,7 @@
 			<div class="modal-footer">
 				<button type="submit" class="btn btn-primary" id="saveViewEvent">Save Changes</button>
 				<button type="submit" class="btn btn-primary" id="removeEvent">Remove Event</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="modalCloseViewEvent">Close</button>
 			</div>
 		</div>
 	</div>
