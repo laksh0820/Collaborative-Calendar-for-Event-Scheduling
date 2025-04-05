@@ -1,8 +1,8 @@
 let btn = document.querySelector('#btn');
 let sidebar = document.querySelector('.sidebar');
 let searchBtn = document.querySelector('.bx-search');
-let createGrp = document.querySelector('#create-group-link')
-let checkInvt = document.querySelector('#check-invites-link')
+let createGrp = document.querySelector('#create-group-link');
+let checkInvt = document.querySelector('#check-invites-link');
 
 btn.addEventListener('click', () => {
     sidebar.classList.toggle('active');
@@ -34,16 +34,16 @@ function create_group() {
                     <div class="modal-body">
                         <form id="createGroupForm">
                             <div class="mb-3">
-                                <label for="groupName" class="form-label">Group Name</label>
+                                <label for="groupName" class="form-label text-body-secondary fw-bold">Group Name</label>
                                 <input type="text" class="form-control" id="groupName" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                             <div class="mb-3">
-                                <label for="groupDescription" class="form-label">Description</label>
+                                <label for="groupDescription" class="form-label text-body-secondary fw-bold">Description</label>
                                 <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Members</label>
+                                <label class="form-label text-body-secondary fw-bold">Members</label>
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
                                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -54,7 +54,9 @@ function create_group() {
                                     <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
                                     <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
                                     </ul>
-                                    <button class="btn btn-light" type="button" id="addMemberBtn">Add</button>
+                                    <button class="btn btn-primary" type="button" id="addMemberBtn">
+                                        Add<i class="bi bi-plus-lg"></i>
+                                    </button>
                                 </div>
                                 <div id="member-invalid-feedback" class="invalid-feedback"></div>
                                 <div id="membersList" class="d-flex flex-wrap gap-2"></div>
@@ -114,7 +116,12 @@ function create_group() {
             $(`#member-invalid-feedback`).text('Please enter a valid email').show();
             return;
         }
-        if (email && !members.includes(email)) {
+        if (members.includes(email)) {
+            $(`#memberInput`).addClass('is-invalid');
+            $(`#member-invalid-feedback`).text('Member already exists').show();
+            return;
+        }
+        if (email) {
             members.push(email);
             permissions.push(perm);
             renderMembersList();
