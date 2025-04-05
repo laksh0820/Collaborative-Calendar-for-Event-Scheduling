@@ -1,40 +1,88 @@
-function load_calendar() {
-  // Helper function to get initials from name
-  function getInitials(name) {
-    if (!name) return '';
-    const parts = name.split(' ');
-    return parts.map(part => part[0].toUpperCase()).join('').substring(0, 2);
+// Global object to track modal resources
+const calendarResources = {
+  modalListeners: [],
+  timeouts: [],
+  intervals: [],
+  tooltips: []
+};
+
+// Helper functions
+function getInitials(name) {
+  if (!name) return '';
+  const parts = name.split(' ');
+  return parts.map(part => part[0].toUpperCase()).join('').substring(0, 2);
+}
+
+// To get the Avatar Color 
+function getAvatarColor(name) {
+  if (!name) return '#6c757d';
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
+  const colors = [
+    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2',
+    '#59a14f', '#edc948', '#b07aa1', '#ff9da7',
+    '#9c755f', '#bab0ac'
+  ];
+  return colors[Math.abs(hash) % colors.length];
+}
 
-  // Helper function to generate consistent color from name
-  function getAvatarColor(name) {
-    if (!name) return '#6c757d'; // Default gray if no name
-
-    // Simple hash function to generate consistent color
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+// Function to cleanup the calendar Resources
+function cleanupResources() {
+  // Remove all event listeners
+  calendarResources.modalListeners.forEach(({ element, event, handler }) => {
+    if (element instanceof jQuery) {
+      element.off(event, handler);
+    } else if (element instanceof Element) {
+      element.removeEventListener(event, handler);
     }
+  });
+  calendarResources.modalListeners = [];
 
-    // Predefined set of pleasant colors
-    const colors = [
-      '#4e79a7', // blue
-      '#f28e2b', // orange
-      '#e15759', // red
-      '#76b7b2', // teal
-      '#59a14f', // green
-      '#edc948', // yellow
-      '#b07aa1', // purple
-      '#ff9da7', // pink
-      '#9c755f', // brown
-      '#bab0ac'  // gray
-    ];
+  // Clear all timeouts and intervals
+  calendarResources.timeouts.forEach(timeout => clearTimeout(timeout));
+  calendarResources.timeouts = [];
+  calendarResources.intervals.forEach(interval => clearInterval(interval));
+  calendarResources.intervals = [];
 
-    return colors[Math.abs(hash) % colors.length];
-  }
+  // Destroy all tooltips
+  calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
+  calendarResources.tooltips = [];
+}
 
-  var calendarEl = document.getElementById('calendar');
-  var calendar = new FullCalendar.Calendar(calendarEl, {
+// Function to show Flash Messages
+function showFlashMessage(type, message) {
+  // To Remove all the existing Flash Messages
+  const existingDivs = document.querySelectorAll('.alert');
+  existingDivs.forEach(div => div.remove());
+
+  // Change the flash icon based on the flash message
+  const icon = type === 'success' ?
+    '<i class="bx bx-check-circle" style="color:lawngreen;"></i>' :
+    '<i class="bx bx-error-circle" style="color:red;"></i>';
+
+  // Display the flash message
+  const flashHTML = `
+    <div class="alert alert-dismissible fade show" role="alert"
+        style="background-color:white; color:black; padding:10px; margin-right:5px;" id="flash-message">
+        ${icon} ${message}
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', flashHTML);
+
+  // Add Timeout to flash messages
+  const flashElement = document.getElementById('flash-message');
+  const timeoutId = setTimeout(() => {
+    flashElement.style.opacity = '0';
+    setTimeout(() => flashElement.remove(), 2000);
+  }, 3000);
+  calendarResources.timeouts.push(timeoutId);
+}
+
+// Function to load the calendat
+function load_calendar() {
+  const calendarEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calendarEl, {
     timeZone: 'local',
     themeSystem: 'bootstrap5',
     headerToolbar: {
@@ -52,300 +100,334 @@ function load_calendar() {
     weekNumbers: true,
     dayMaxEvents: true,
     eventDidMount: function (info) {
-      // Add tooltip if description exists
       if (info.event.extendedProps.description) {
-        new bootstrap.Tooltip(info.el, {
+        const tooltip = new bootstrap.Tooltip(info.el, {
           title: info.event.extendedProps.description,
           placement: 'top',
           trigger: 'hover'
         });
+        calendarResources.tooltips.push(tooltip);
       }
     },
     events: function (fetchInfo, successCallback, failureCallback) {
-      var group_id = document.getElementById('group-select').value;
+      const group_id = document.getElementById('group-select').value;
       fetch(`/data/${group_id}`)
         .then(response => response.json())
         .then(data => successCallback(data))
         .catch(error => failureCallback(error));
-    }, // Fetch events from server
-    eventClick: function (info) {
-      // Close any currently open Bootstrap modal
-      $('.modal').modal('hide');
-
-      // Close the currently open popover
-      $('.fc-more-popover').remove();
-
-      // Close the currently open tooltip
-      $('.tooltip').remove();
-
-      // Modal approach
-      const modal = new bootstrap.Modal('#modal-view-event');
-      $('.event-title').html(info.event.title);
-      // $('.event-start').html(info.event.start.toISOString().replace('T',' ').substring(0,16));
-      // $('.event-end').html(info.event.end.toISOString().replace('T',' ').substring(0,16));
-      $('.event-body').html(
-        info.event.extendedProps?.description ||
-        '<span class="no-description">No description</span>'
-      );
-
-      var group_id = document.getElementById('group-select').value;
-      if (group_id != 1) {
-        // Add the participation section
-        document.getElementById("participants-section").style.display = 'block';
-
-        // Handle participants
-        const participants = info.event.extendedProps.participants;
-        const participantsList = document.getElementById('participants-list');
-
-        // Clear previous participants
-        participantsList.innerHTML = '';
-
-        // Check if there are participants
-        if (participants && participants.length > 0) {
-          // Create badges for each participant
-          participants.forEach(participant => {
-            // Create the participant container
-            const participantElement = document.createElement('div');
-            participantElement.className = 'participant';
-
-            // Create avatar element with colored background
-            const avatar = document.createElement('div');
-            avatar.className = 'avatar';
-            avatar.style.backgroundColor = getAvatarColor(participant.name); // Function to generate color
-            avatar.textContent = getInitials(participant.name); // Function to get initials
-            participantElement.appendChild(avatar);
-
-            // Create participant info container
-            const infoContainer = document.createElement('div');
-            infoContainer.className = 'participant-info';
-
-            // Create name element
-            const nameElement = document.createElement('p');
-            nameElement.className = 'name';
-            nameElement.textContent = participant.name || '';
-            infoContainer.appendChild(nameElement);
-
-            // Create email element
-            const emailElement = document.createElement('p');
-            emailElement.className = 'email';
-            emailElement.textContent = participant.email;
-            infoContainer.appendChild(emailElement);
-
-            // Add info container to participant element
-            participantElement.appendChild(infoContainer);
-
-            // Add participant to the list
-            participantsList.appendChild(participantElement);
-          });
-        } else {
-          // Show message if no participants
-          const noParticipants = document.createElement('p');
-          noParticipants.textContent = 'No participants';
-          noParticipants.className = 'text-muted';
-          participantsList.appendChild(noParticipants);
-        }
-      }
-      else {
-        // Hide the participants section for individual events
-        document.getElementById("participants-section").style.display = 'none';
-      }
-
-      var group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
-
-      if (group_permission == 'Viewer') {
-        document.getElementById('removeEvent').style.display = 'none';
-      }
-      else {
-        // Add delete handler
-        $('#removeEvent').on('click', function (e) {
-          e.preventDefault();
-          removeEvent(info.event);
-        });
-      }
-
-      info.jsEvent.preventDefault();
-      modal.show();
     },
-    eventTimeFormat: { // Format the time display
+    eventClick: function (info) {
+      showEventModal(info);
+    },
+    eventTimeFormat: {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
       meridiem: 'short'
     },
-    selectable: true, // Enable date/time selection
-    nowIndicator: true, // Show a line indicating the current time
+    selectable: true,
+    nowIndicator: true,
     select: function (arg) {
-      var group_id = document.getElementById('group-select').value;
-      var group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
-
-      if (group_permission != 'Viewer') {
-
-        if (group_id == 1) {
-          // Individual Dashboard
-          document.getElementById('participants').style.display = 'none';
-        }
-        else {
-          // Group Dashboard
-          document.getElementById('participants').style.display = 'block';
-          showParticipants();
-        }
-
-        // Reset previous error states
-        $('.is-invalid').removeClass('is-invalid');
-        $('.invalid-feedback').hide();
-
-        // Open the modal when a time range is selected
-        $('#modal-view-event-add').modal('show');
-
-        // Set the start and end times in the form
-        $('#eventStart').val(arg.startStr);
-        $('#eventEnd').val(arg.endStr);
-      }
-      else {
-        // Remove any existing div with the class
-        const existingDivs = document.querySelectorAll('.alert');
-        existingDivs.forEach(div => div.remove());
-
-        // Display the error flash message
-        const flashHTML = `
-        <div class="alert alert-dismissible fade show" role="alert"
-            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="add-event-error">
-            <i class="bx bx-error" style="color:yellow;"></i>
-            Only View Permission
-        </div>`;
-        const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
-
-        // Auto-remove
-        setTimeout(function () {
-          const flashElement = document.getElementById('add-event-error');
-          flashElement.style.opacity = '0';
-          setTimeout(function () {
-            flashElement.remove();
-          }, 2000);
-        }, 1000);
-      }
+      handleCalendarSelection(arg);
     },
     loading: function (bool) {
       $('#loading').toggle(bool);
     }
   });
 
+  // To render the calendar
   calendar.render();
 
-  // Add event listener to the dropdown
+  // Group selection change handler
   document.getElementById('group-select').addEventListener('change', function () {
-    // Remove all events at once
     calendar.removeAllEvents();
-
-    // Refetch events when selection changes
     calendar.refetchEvents();
   });
 
-  function showParticipants() {
-    const container = document.getElementById('eventParticipantsList');
-    container.innerHTML = '';
+  // Event modal functions
+  function showEventModal(info) {
+    cleanupResources();
 
-    const userEmail = document.querySelector('meta[name="user-email"]').content;
-    const currentUser = document.createElement('span');
-    currentUser.className = 'badge d-flex align-items-center';
-    currentUser.style = 'background:rgb(30, 18, 82);'
-    currentUser.innerHTML = `${userEmail}`;
-    container.appendChild(currentUser);
+    const modal = new bootstrap.Modal('#modal-view-event');
+    $('.event-title').text(info.event.title);
+    $('.event-body').html(
+      info.event.extendedProps?.description ||
+      '<span class="no-description">No description</span>'
+    );
 
-    // Add participants for events functionality
-    const participants = [];
+    const group_id = document.getElementById('group-select').value;
+    if (group_id != 1) {
+      setupParticipantsSection(info, modal);
+    } else {
+      document.getElementById("participants-section").style.display = 'none';
+    }
 
-    document.getElementById('addParticipantBtn')?.addEventListener('click', addParticipant);
-    document.getElementById('participantSelect')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addParticipant();
-      }
+    setupEventActions(info, modal);
+
+    info.jsEvent.preventDefault();
+    modal.show();
+  }
+
+  function setupParticipantsSection(info, modal) {
+    document.getElementById("participants-section").style.display = 'block';
+    const participantsList = document.getElementById('participants-list');
+    participantsList.innerHTML = '';
+
+    const participants = info.event.extendedProps.participants || [];
+    if (participants.length > 0) {
+      participants.forEach(participant => {
+        renderParticipant(info, participant, participants.length > 1);
+      });
+    } else {
+      const noParticipants = document.createElement('p');
+      noParticipants.textContent = 'No participants';
+      noParticipants.className = 'text-muted';
+      participantsList.appendChild(noParticipants);
+    }
+
+    // Participant select focus handler
+    const selectFocusHandler = () => updateParticipantSelect(info);
+    $('#updateParticipantSelect').off('focus').on('focus', selectFocusHandler);
+    calendarResources.modalListeners.push({
+      element: $('#updateParticipantSelect'),
+      event: 'focus',
+      handler: selectFocusHandler
     });
 
-    function addParticipant() {
-      const input = document.getElementById('participantSelect');
-      const name = input.value.trim();
-
-      if (name && !participants.includes(name)) {
-        participants.push(name);
-        renderParticipantsList();
-        input.value = '';
-        input.focus();
-      }
+    // Add participant handler
+    const addClickHandler = () => viewAddParticipant(info);
+    const addBtn = document.getElementById('modal-view-add-participant');
+    if (addBtn) {
+      addBtn.addEventListener('click', addClickHandler);
+      calendarResources.modalListeners.push({
+        element: addBtn,
+        event: 'click',
+        handler: addClickHandler
+      });
     }
 
-    function removeParticipant(name) {
-      const index = participants.indexOf(name);
-      if (index !== -1) {
-        participants.splice(index, 1);
-        renderParticipantsList();
+    // Enter key handler
+    const keypressHandler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        viewAddParticipant(info);
       }
-    }
-
-    function renderParticipantsList() {
-      const container = document.getElementById('eventParticipantsList');
-      container.innerHTML = '';
-
-      const userEmail = document.querySelector('meta[name="user-email"]').content;
-      const currentUser = document.createElement('span');
-      currentUser.className = 'badge d-flex align-items-center';
-      currentUser.style = 'background:rgb(30, 18, 82);'
-      currentUser.innerHTML = `${userEmail}`;
-      container.appendChild(currentUser);
-
-      participants.forEach(name => {
-        const badge = document.createElement('span');
-        badge.className = 'badge d-flex align-items-center';
-        badge.style = 'background:rgb(30, 18, 82);'
-        badge.innerHTML = `
-                ${name}
-                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
-            `;
-        container.appendChild(badge);
-
-        // Add event listener to remove button
-        badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
+    };
+    const selectInput = document.getElementById('updateParticipantSelect');
+    if (selectInput) {
+      selectInput.addEventListener('keypress', keypressHandler);
+      calendarResources.modalListeners.push({
+        element: selectInput,
+        event: 'keypress',
+        handler: keypressHandler
       });
     }
   }
 
-  function getSelectedParticipants() {
-    // Get all participant badge elements
-    const badges = document.querySelectorAll('#eventParticipantsList .badge');
+  function setupEventActions(info, modal) {
+    const group_id = document.getElementById('group-select').value;
+    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
-    // Convert NodeList to array and map to participant objects
-    return Array.from(badges).map(badge => {
-      // Extract the name (original text content minus the remove button)
-      const name = badge.childNodes[0].textContent.trim();
-      return {
-        name: name
+    if (group_permission === 'Viewer') {
+      document.getElementById('removeEvent').style.display = 'none';
+    } else {
+      document.getElementById('removeEvent').style.display = 'block';
+      const removeHandler = (e) => {
+        e.preventDefault();
+        removeEvent(info.event);
       };
+      $('#removeEvent').on('click', removeHandler);
+      calendarResources.modalListeners.push({
+        element: $('#removeEvent'),
+        event: 'click',
+        handler: removeHandler
+      });
+    }
+
+    const saveHandler = (e) => {
+      e.preventDefault();
+      saveViewEvent(info.event);
+    };
+    $('#saveViewEvent').on('click', saveHandler);
+    calendarResources.modalListeners.push({
+      element: $('#saveViewEvent'),
+      event: 'click',
+      handler: saveHandler
     });
   }
 
-  function showError(fieldId, message) {
-    $(`#${fieldId}`).addClass('is-invalid');
-    $(`#${fieldId}`).next('.invalid-feedback').text(message).show();
+  function renderParticipant(info, participant, showRemoveButton) {
+    const participantsList = document.getElementById('participants-list');
+    const participantElement = document.createElement('div');
+    participantElement.className = 'participant';
+    participantElement.id = `participant-email-${participant.email}`;
+
+    // Create avatar
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.style.backgroundColor = getAvatarColor(participant.name);
+    avatar.textContent = getInitials(participant.name);
+    participantElement.appendChild(avatar);
+
+    // Create info container
+    const infoContainer = document.createElement('div');
+    infoContainer.className = 'participant-info';
+
+    // Add name and email
+    const nameElement = document.createElement('p');
+    nameElement.className = 'name';
+    nameElement.textContent = participant.name || '';
+    infoContainer.appendChild(nameElement);
+
+    const emailElement = document.createElement('p');
+    emailElement.className = 'email';
+    emailElement.textContent = participant.email;
+    infoContainer.appendChild(emailElement);
+
+    participantElement.appendChild(infoContainer);
+
+    if (showRemoveButton) {
+      const removeElement = document.createElement('button');
+      removeElement.className = "modal-view-participant-remove-button";
+      removeElement.textContent = "Remove";
+      removeElement.id = `modal-view-participant-remove-button-${participant.email}`;
+      participantElement.appendChild(removeElement);
+
+      const removeHandler = () => viewRemoveParticipant(info, participant.email);
+      removeElement.addEventListener('click', removeHandler);
+      calendarResources.modalListeners.push({
+        element: removeElement,
+        event: 'click',
+        handler: removeHandler
+      });
+    }
+
+    participantsList.appendChild(participantElement);
   }
 
-  // Save event handler
-  $('#saveEvent').on('click', function (e) {
+  function saveViewEvent(event) {
+    const eventTitle = $('#model-view-title-editable').text().trim();
+    // const eventStart = $('#eventStart').val().trim();
+    // const eventEnd = $('#eventEnd').val().trim();
+    const description = $('#model-view-description-editable').text().trim();
+
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').hide();
+
+    let isValid = true;
+
+    if (!eventTitle) {
+      showError('model-view-title-editable', 'Event title is required');
+      isValid = false;
+    }
+
+    // if (!eventStart) {
+    //   showError('eventStart', 'Start time is required');
+    //   isValid = false;
+    // }
+
+    // if (!eventEnd) {
+    //   showError('eventEnd', 'End time is required');
+    //   isValid = false;
+    // } else if (eventStart && new Date(eventStart) >= new Date(eventEnd)) {
+    //   showError('eventEnd', 'End time must be after start time');
+    //   isValid = false;
+    // }
+
+    if (isValid) {
+      $('#modal-view-event').modal('hide');
+
+      $.ajax({
+        url: `/update_event/${event.extendedProps.event_id}`,
+        type: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          title: eventTitle,
+          // start: eventStart,
+          // end: eventEnd,
+          description: description
+        }),
+        success: function () {
+          calendar.removeAllEvents();
+          calendar.refetchEvents();
+          showFlashMessage('success', 'Event Updated Successfully');
+        },
+        error: function () {
+          showFlashMessage('error', 'Error updating event');
+        }
+      });
+    }
+  }
+
+  function removeEvent(event) {
+    $('#modal-view-event').modal('hide');
+
+    $.ajax({
+      url: `/remove_event/${event.extendedProps.event_id}`,
+      type: 'DELETE',
+      contentType: 'application/json',
+      success: function () {
+        event.remove();
+        showFlashMessage('success', 'Event Removed Successfully');
+      },
+      error: function () {
+        showFlashMessage('error', 'Error Removing event');
+      }
+    });
+  }
+
+  function handleCalendarSelection(arg) {
+    const group_id = document.getElementById('group-select').value;
+    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+
+    if (group_permission !== 'Viewer') {
+      prepareEventCreationModal(group_id, arg);
+    } else {
+      showFlashMessage('error', 'Only View Permission');
+    }
+  }
+
+  function prepareEventCreationModal(group_id, arg) {
+    cleanupResources();
+
+    if (group_id == 1) {
+      document.getElementById('participants').style.display = 'none';
+    } else {
+      document.getElementById('participants').style.display = 'block';
+      showParticipants();
+    }
+
+    $('.is-invalid').removeClass('is-invalid');
+    $('.invalid-feedback').hide();
+
+    $('#eventStart').val(arg.startStr);
+    $('#eventEnd').val(arg.endStr);
+
+    // Save event handler
+    const saveHandler = (e) => saveCalendarEvent(e, calendar);
+    $('#saveEvent').off('click').on('click', saveHandler);
+    calendarResources.modalListeners.push({
+      element: $('#saveEvent'),
+      event: 'click',
+      handler: saveHandler
+    });
+
+    $('#modal-view-event-add').modal('show');
+  }
+
+  function saveCalendarEvent(e, calendar) {
     e.preventDefault();
 
-    // Get form values
     const eventTitle = $('#eventTitle').val().trim();
     const eventStart = $('#eventStart').val().trim();
     const eventEnd = $('#eventEnd').val().trim();
     const description = $('#eventDescription').val().trim();
     const userGroup = $('#group-select').val();
-    const participants = getSelectedParticipants(); // Get array of participant IDs\
+    const participants = getSelectedParticipants();
 
-    // Reset previous error states
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').hide();
 
-    // Validate fields
     let isValid = true;
 
     if (!eventTitle) {
@@ -371,9 +453,7 @@ function load_calendar() {
       isValid = false;
     }
 
-    // If valid, submit via AJAX
     if (isValid) {
-      // Close the modal
       $('#modal-view-event-add').modal('hide');
 
       $.ajax({
@@ -388,132 +468,175 @@ function load_calendar() {
           group_id: userGroup,
           participants: participants
         }),
-        success: function (response) {
-          // Remove all events at once
+        success: function () {
           calendar.removeAllEvents();
-
-          // Refetch events when selection changes
           calendar.refetchEvents();
-
-          // Remove any existing div with the class
-          const existingDivs = document.querySelectorAll('.alert');
-          existingDivs.forEach(div => div.remove());
-
-          // Display the success flash message
-          const flashHTML = `
-          <div class="alert alert-dismissible fade show" role="alert"
-              style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-sub-success">
-              <i class="bx bx-check-circle" style="color:lawngreen;"></i>
-              Event Added Successfully
-          </div>`;
-          document.body.insertAdjacentHTML('beforeend', flashHTML);
-
-          // Auto-remove
-          setTimeout(function () {
-            const flashElement = document.getElementById('event-sub-success');
-            flashElement.style.opacity = '0';
-            setTimeout(function () {
-              flashElement.remove();
-            }, 2000);
-          }, 1000);
+          showFlashMessage('success', 'Event Added Successfully');
         },
         error: function () {
-          // Remove any existing div with the class
-          const existingDivs = document.querySelectorAll('.alert');
-          existingDivs.forEach(div => div.remove());
-
-          // Display the error flash message
-          const flashHTML = `
-          <div class="alert alert-dismissible fade show" role="alert"
-              style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-sub-error">
-              <i class="bx bx-error-circle" style="color:red;"></i>
-              Error adding event
-          </div>`;
-          const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
-
-          // Auto-remove
-          setTimeout(function () {
-            const flashElement = document.getElementById('event-sub-error');
-            flashElement.style.opacity = '0';
-            setTimeout(function () {
-              flashElement.remove();
-            }, 2000);
-          }, 1000);
+          showFlashMessage('error', 'Error adding event');
         }
       });
     }
-  });
+  }
 
-  // Remove event handler
-  function removeEvent(event) {
-    // Remove from calendar
-    event.remove();
-
-    // Close the modal
-    $('#modal-view-event').modal('hide');
-
-    // Delete from the server
+  // Participant management functions
+  function updateParticipantSelect(info) {
+    const group_id = document.getElementById('group-select').value;
     $.ajax({
-      url: `/remove_event/${event.extendedProps.event_id}`,
+      url: `/members/${group_id}`,
+      type: 'GET',
+      success: function (data) {
+        const select = $('#updateParticipantSelect');
+        select.empty().append('<option value="" disabled selected>Select a participant</option>');
+
+        const filteredData = data.filter(item1 =>
+          !info.event.extendedProps.participants.some(item2 => item1.email === item2.email)
+        );
+
+        filteredData.forEach(member => {
+          select.append(
+            $('<option></option>')
+              .val(member.email)
+              .text(member.email)
+          );
+        });
+      },
+      error: function () {
+        $('#updateParticipantSelect').html('<option value="" disabled>Error loading participants</option>');
+      }
+    });
+  }
+
+  function viewAddParticipant(info) {
+    const input = document.getElementById('updateParticipantSelect');
+    const email = input.value.trim();
+
+    if (email) {
+      $.ajax({
+        url: `/update_participate/${info.event.extendedProps.event_id}/${email}`,
+        type: 'PUT',
+        contentType: 'application/json',
+        success: function (data) {
+          const optionToRemove = input.querySelector(`option[value="${email}"]`);
+          if (optionToRemove) optionToRemove.remove();
+
+          const participants = info.event.extendedProps.participants || [];
+          if (participants.length == 1) {
+            participants.forEach(p => {
+              const participantElement = document.getElementById(`participant-email-${p.email}`);
+              const removeElement = document.createElement('button');
+              removeElement.className = "modal-view-participant-remove-button";
+              removeElement.textContent = "Remove";
+              removeElement.id = `modal-view-participant-remove-button-${p.email}`;
+              participantElement.appendChild(removeElement);
+
+              const removeHandler = () => viewRemoveParticipant(info, p.email);
+              removeElement.addEventListener('click', removeHandler);
+              calendarResources.modalListeners.push({
+                element: removeElement,
+                event: 'click',
+                handler: removeHandler
+              });
+            });
+          }
+
+          participants.push(data);
+          info.event.setExtendedProp('participants', participants);
+          renderParticipant(info, data, true);
+          input.value = '';
+        },
+        error: function () {
+          showFlashMessage('error', 'Error adding participant');
+        }
+      });
+    }
+  }
+
+  function viewRemoveParticipant(info, email) {
+    $.ajax({
+      url: `/remove_participate/${info.event.extendedProps.event_id}/${email}`,
       type: 'DELETE',
       contentType: 'application/json',
       success: function () {
-        // Display the success flash message
-        const flashHTML = `
-        <div class="alert alert-dismissible fade show" role="alert"
-            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-rem-success">
-            <i class="bx bx-check-circle" style="color:lawngreen;"></i>
-            Event Removed Successfully
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', flashHTML);
+        document.getElementById(`participant-email-${email}`)?.remove();
+        const participants = info.event.extendedProps.participants || [];
+        const updatedParticipants = participants.filter(p => p.email !== email);
+        info.event.setExtendedProp('participants', updatedParticipants);
 
-        // Auto-remove
-        setTimeout(function () {
-          const flashElement = document.getElementById('event-rem-success');
-          flashElement.style.opacity = '0';
-          setTimeout(function () {
-            flashElement.remove();
-          }, 2000);
-        }, 1000);
+        if (updatedParticipants.length == 1) {
+          updatedParticipants.forEach(p => {
+            document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
+          });
+        }
       },
       error: function () {
-        // Remove any existing div with the class
-        const existingDivs = document.querySelectorAll('.alert');
-        existingDivs.forEach(div => div.remove());
-
-        // Display the error flash message
-        const flashHTML = `
-        <div class="alert alert-dismissible fade show" role="alert"
-            style="background-color:white; color:black; padding:10px; margin-right:5px;" id="event-rem-error">
-            <i class="bx bx-error-circle" style="color:red;"></i>
-            Error Removing event
-        </div>`;
-        const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
-
-        // Auto-remove
-        setTimeout(function () {
-          const flashElement = document.getElementById('event-rem-error');
-          flashElement.style.opacity = '0';
-          setTimeout(function () {
-            flashElement.remove();
-          }, 2000);
-        }, 1000);
+        showFlashMessage('error', 'Error removing participant');
       }
     });
-  };
-};
+  }
 
+  function showParticipants() {
+    const container = document.getElementById('eventParticipantsList');
+    container.innerHTML = '';
+
+    const userEmail = document.querySelector('meta[name="user-email"]').content;
+    const currentUser = document.createElement('span');
+    currentUser.className = 'badge d-flex align-items-center';
+    currentUser.style = 'background:rgb(30, 18, 82);';
+    currentUser.innerHTML = userEmail;
+    container.appendChild(currentUser);
+
+    const addHandler = () => addParticipant();
+    $('#addParticipantBtn').off('click').on('click', addHandler);
+    calendarResources.modalListeners.push({
+      element: $('#addParticipantBtn'),
+      event: 'click',
+      handler: addHandler
+    });
+
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addParticipant();
+      }
+    };
+    const selectInput = document.getElementById('participantSelect');
+    if (selectInput) {
+      selectInput.addEventListener('keypress', keyHandler);
+      calendarResources.modalListeners.push({
+        element: selectInput,
+        event: 'keypress',
+        handler: keyHandler
+      });
+    }
+  }
+
+  // Helper functions
+  function getSelectedParticipants() {
+    const badges = document.querySelectorAll('#eventParticipantsList .badge');
+    return Array.from(badges).map(badge => ({
+      name: badge.childNodes[0].textContent.trim()
+    }));
+  }
+
+  function showError(fieldId, message) {
+    $(`#${fieldId}`).addClass('is-invalid');
+    $(`#${fieldId}`).next('.invalid-feedback').text(message).show();
+  }
+}
+
+// Initialize calendar when DOM is loaded
 document.addEventListener('DOMContentLoaded', load_calendar);
 
+// Load members for participant selection
 $(document).ready(function () {
-  // Fetch members when dropdown is clicked or page loads
-  $('#participantSelect').one('focus', loadMembers);
-
-  // Or load immediately on page load
+  const loadHandler = () => loadMembers();
+  $('#participantSelect').off('focus').on('focus', loadHandler);
   loadMembers();
 
   function loadMembers() {
-    var group_id = document.getElementById('group-select').value;
+    const group_id = document.getElementById('group-select').value;
     $.ajax({
       url: `/members/${group_id}`,
       type: 'GET',
@@ -521,12 +644,16 @@ $(document).ready(function () {
         const select = $('#participantSelect');
         select.empty().append('<option value="" disabled selected>Select a participant</option>');
 
-        $.each(data, function (index, member) {
-          select.append(
-            $('<option></option>')
-              .val(member.email)
-              .text(member.email)
-          );
+        const userEmail = document.querySelector('meta[name="user-email"]').content;
+
+        data.forEach(member => {
+          if (member.email != userEmail) {
+            select.append(
+              $('<option></option>')
+                .val(member.email)
+                .text(member.email)
+            );
+          }
         });
       },
       error: function () {
