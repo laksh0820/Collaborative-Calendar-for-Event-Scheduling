@@ -523,8 +523,11 @@ def add_event():
             participant = Participate()
             participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
             participant.event_id = newEvent.event_id
-            participant.status = 'Pending'
             db.session.add(participant)
+            
+            if participantEmail == current_user.email:
+                participant.read_status = 'Read'
+                participant.status = 'Accepted'
             
         try:
             db.session.commit()
