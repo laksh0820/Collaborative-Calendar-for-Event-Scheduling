@@ -157,8 +157,8 @@ function load_calendar() {
     if (group_id != 1) {
       document.getElementById("participants-section").style.display = 'block';
       if (group_permission !== 'Viewer') {
-        document.getElementById("modal-view-add-participant-select").style.display = 'block';
-        document.getElementById("modalCloseViewEvent").style.display = 'block';
+        document.getElementById("modal-view-add-participant-select").style.display = 'flex';
+        document.getElementById("modalCloseViewEvent").style.display = 'none';
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
       }
@@ -750,12 +750,12 @@ function edit_group_settings() {
     type: 'GET',
     success: function (groupData) {
       originalData = {
-          name: groupData['name'],
-          description: groupData['description'],
-          members: groupData['members']
+        name: groupData['name'],
+        description: groupData['description'],
+        members: groupData['members']
       };
-      
-      currentData = {...originalData};
+
+      currentData = { ...originalData };
       members = [...groupData.members];
 
       isAdmin = groupData['authorization'];
@@ -843,134 +843,134 @@ function edit_group_settings() {
     $('#groupNameDisplay').text(originalData.name);
     $('#groupDescDisplay').text(originalData.description);
     renderMembersList();
-    
+
     // Show modal after data loads
     modal.show();
 
     // Initialize editable fields (for admins only)
     if (isAdmin) {
-        // Group name editing
-        $('#groupNameContainer').on('click', function() {
-            if ($(this).hasClass('editing')) return;
-            
-            $(this).addClass('editing');
-            $('#groupNameDisplay').addClass('d-none');
-            $('#editGroupName')
-                .removeClass('d-none')
-                .val(currentData.name)
-                .focus();
-        });
-        
-        $('#editGroupName').on('blur', function() {
-            const newName = $(this).val().trim();
-            if (newName !== currentData.name) {
-                currentData.name = newName;
-                $('#groupNameDisplay').text(newName);
-                checkForChanges();
-            }
-            $('#groupNameContainer').removeClass('editing');
-            $('#groupNameDisplay').removeClass('d-none');
-            $(this).addClass('d-none');
-        });
-        
-        // Description editing
-        $('#groupDescContainer').on('click', function() {
-            if ($(this).hasClass('editing')) return;
-            
-            const containerHeight = $(this).height();
-            $(this).addClass('editing');
-            $('#groupDescDisplay').addClass('d-none');
-            $('#editGroupDescription')
-                .removeClass('d-none')
-                .val(currentData.description)
-                .css('height', containerHeight + 'px')
-                .focus();
-        });
-        
-        $('#editGroupDescription').on('blur', function() {
-            const newDesc = $(this).val().trim();
-            if (newDesc !== currentData.description) {
-                currentData.description = newDesc;
-                $('#groupDescDisplay').text(newDesc);
-                checkForChanges();
-            }
-            $('#groupDescContainer').removeClass('editing');
-            $('#groupDescDisplay').removeClass('d-none');
-            $(this).addClass('d-none');
-        });
-        
-        // Member management
-        $('#addEditMemberBtn').click(addMember);
-        $('#editMemberInput').keypress(function(e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            addMember();
-          }
-        });
-        
-        // Role dropdown
-        $(document).on('click', '[data-role]', function() {
-            $('#editRoleDropdown').text($(this).data('role'));
-        });
-        
-        // Save changes
-        $('#saveChangesBtn').click(() => saveChanges(groupId));
-        
-        // Delete group
-        $('#deleteGroupBtn').click(() => {
-            if (confirm('Are you sure you want to permanently delete this group?')) {
-                $.ajax({
-                    url: `/group_info/${groupId}`,
-                    type: 'DELETE',
-                    success: () => {
-                        modal.hide();
-                        showFlash('Group deleted successfully', 'success');
-                        refreshGroupList();
-                    },
-                    error: () => showFlash('Failed to delete group', 'error')
-                });
-            }
-        });
+      // Group name editing
+      $('#groupNameContainer').on('click', function () {
+        if ($(this).hasClass('editing')) return;
+
+        $(this).addClass('editing');
+        $('#groupNameDisplay').addClass('d-none');
+        $('#editGroupName')
+          .removeClass('d-none')
+          .val(currentData.name)
+          .focus();
+      });
+
+      $('#editGroupName').on('blur', function () {
+        const newName = $(this).val().trim();
+        if (newName !== currentData.name) {
+          currentData.name = newName;
+          $('#groupNameDisplay').text(newName);
+          checkForChanges();
+        }
+        $('#groupNameContainer').removeClass('editing');
+        $('#groupNameDisplay').removeClass('d-none');
+        $(this).addClass('d-none');
+      });
+
+      // Description editing
+      $('#groupDescContainer').on('click', function () {
+        if ($(this).hasClass('editing')) return;
+
+        const containerHeight = $(this).height();
+        $(this).addClass('editing');
+        $('#groupDescDisplay').addClass('d-none');
+        $('#editGroupDescription')
+          .removeClass('d-none')
+          .val(currentData.description)
+          .css('height', containerHeight + 'px')
+          .focus();
+      });
+
+      $('#editGroupDescription').on('blur', function () {
+        const newDesc = $(this).val().trim();
+        if (newDesc !== currentData.description) {
+          currentData.description = newDesc;
+          $('#groupDescDisplay').text(newDesc);
+          checkForChanges();
+        }
+        $('#groupDescContainer').removeClass('editing');
+        $('#groupDescDisplay').removeClass('d-none');
+        $(this).addClass('d-none');
+      });
+
+      // Member management
+      $('#addEditMemberBtn').click(addMember);
+      $('#editMemberInput').keypress(function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addMember();
+        }
+      });
+
+      // Role dropdown
+      $(document).on('click', '[data-role]', function () {
+        $('#editRoleDropdown').text($(this).data('role'));
+      });
+
+      // Save changes
+      $('#saveChangesBtn').click(() => saveChanges(groupId));
+
+      // Delete group
+      $('#deleteGroupBtn').click(() => {
+        if (confirm('Are you sure you want to permanently delete this group?')) {
+          $.ajax({
+            url: `/group_info/${groupId}`,
+            type: 'DELETE',
+            success: () => {
+              modal.hide();
+              showFlash('Group deleted successfully', 'success');
+              refreshGroupList();
+            },
+            error: () => showFlash('Failed to delete group', 'error')
+          });
+        }
+      });
     }
   }
-  
+
   function addMember() {
-      if ($(`#editMemberInput`).hasClass('is-invalid')) {
-        $(`#editMemberInput`).removeClass('is-invalid');
-        $(`#editmember-invalid-feedback`).hide();
-      }
-      const email = $('#editMemberInput').val().trim();
-      const role = $('#editRoleDropdown').text().trim();
-      
-      if (!validateEmail(email)) {
-        $(`#editMemberInput`).addClass('is-invalid');
-        $(`#editmember-invalid-feedback`).text('Please enter a valid email').show();
-        return;
-      }
-      
-      if (members.some(m => m.email === email)) {
-        $(`#editMemberInput`).addClass('is-invalid');
-        $(`#editmember-invalid-feedback`).text('Member already exists').show();
-        return;
-      }
-      
-      members.push({ email, role });
-      $('#editMemberInput').val('');
-      renderMembersList();
-      checkForChanges();
+    if ($(`#editMemberInput`).hasClass('is-invalid')) {
+      $(`#editMemberInput`).removeClass('is-invalid');
+      $(`#editmember-invalid-feedback`).hide();
+    }
+    const email = $('#editMemberInput').val().trim();
+    const role = $('#editRoleDropdown').text().trim();
+
+    if (!validateEmail(email)) {
+      $(`#editMemberInput`).addClass('is-invalid');
+      $(`#editmember-invalid-feedback`).text('Please enter a valid email').show();
+      return;
+    }
+
+    if (members.some(m => m.email === email)) {
+      $(`#editMemberInput`).addClass('is-invalid');
+      $(`#editmember-invalid-feedback`).text('Member already exists').show();
+      return;
+    }
+
+    members.push({ email, role });
+    $('#editMemberInput').val('');
+    renderMembersList();
+    checkForChanges();
   }
-  
+
   function removeMember(email) {
-      members = members.filter(m => m.email !== email);
-      renderMembersList();
-      checkForChanges();
+    members = members.filter(m => m.email !== email);
+    renderMembersList();
+    checkForChanges();
   }
-  
+
   function renderMembersList() {
-      const $container = $('#editMembersList').empty();
-      
-      members.forEach(member => {
-          const $item = $(`
+    const $container = $('#editMembersList').empty();
+
+    members.forEach(member => {
+      const $item = $(`
               <div class="list-group-item d-flex justify-content-between align-items-center">
                   <div>
                       <span class="fw-bold">${member.email}</span>
@@ -983,57 +983,57 @@ function edit_group_settings() {
                   ` : ''}
               </div>
           `);
-          
-          $container.append($item);
-      });
-      
-      // Add remove handler for new buttons
-      $('.remove-member').click(function() {
-          removeMember($(this).data('email'));
-      });
+
+      $container.append($item);
+    });
+
+    // Add remove handler for new buttons
+    $('.remove-member').click(function () {
+      removeMember($(this).data('email'));
+    });
   }
-  
+
   function checkForChanges() {
-      const nameChanged = currentData.name !== originalData.name;
-      const descChanged = currentData.description !== originalData.description;
-      const membersChanged = JSON.stringify(members) !== JSON.stringify(originalData.members);
-      
-      hasChanges = nameChanged || descChanged || membersChanged;
-      $('#saveChangesBtn').prop('disabled', !hasChanges);
+    const nameChanged = currentData.name !== originalData.name;
+    const descChanged = currentData.description !== originalData.description;
+    const membersChanged = JSON.stringify(members) !== JSON.stringify(originalData.members);
+
+    hasChanges = nameChanged || descChanged || membersChanged;
+    $('#saveChangesBtn').prop('disabled', !hasChanges);
   }
-  
+
   function saveChanges(groupId) {
-      if (!hasChanges) return;
-      
-      $.ajax({
-          url: `/group_info/${groupId}`,
-          type: 'PUT',
-          contentType: 'application/json',
-          data: JSON.stringify({
-              name: currentData.name,
-              description: currentData.description,
-              members: members
-          }),
-          success: () => {
-              showFlash('Group updated successfully', 'success');
-              originalData = {...currentData};
-              originalData.members = [...members];
-              checkForChanges();
-              refreshGroupList();
-          },
-          error: () => showFlash('Failed to update group', 'error')
-      });
+    if (!hasChanges) return;
+
+    $.ajax({
+      url: `/group_info/${groupId}`,
+      type: 'PUT',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        name: currentData.name,
+        description: currentData.description,
+        members: members
+      }),
+      success: () => {
+        showFlash('Group updated successfully', 'success');
+        originalData = { ...currentData };
+        originalData.members = [...members];
+        checkForChanges();
+        refreshGroupList();
+      },
+      error: () => showFlash('Failed to update group', 'error')
+    });
   }
-  
+
   // Helper functions
   function validateEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
-  
+
   function showFlash(message, type) {
     const icon = type === 'success' ? 'bx-check-circle' : 'bx-error';
     const color = type === 'success' ? 'lawngreen' : 'red';
-    
+
     const flashHTML = `
     <div class="alert alert-dismissible fade show" role="alert"
         style="background-color:white; color:black; padding:10px; margin-right:5px;">
@@ -1042,38 +1042,38 @@ function edit_group_settings() {
     </div>`;
     const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
 
-    setTimeout(function() {
-        const element = document.querySelector('.alert');
-        if (element) {
-            element.style.opacity = '0';
-            setTimeout(function() {
-                element.remove();
-            }, 2000);
-        }
+    setTimeout(function () {
+      const element = document.querySelector('.alert');
+      if (element) {
+        element.style.opacity = '0';
+        setTimeout(function () {
+          element.remove();
+        }, 2000);
+      }
     }, 1000);
   }
-  
+
   function refreshGroupList() {
     $.ajax({
-        url: '/get_groups',
-        type: 'GET',
-        success: function(data) {
-            const select = $('#group-select');
-            select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
+      url: '/get_groups',
+      type: 'GET',
+      success: function (data) {
+        const select = $('#group-select');
+        select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
 
-            $.each(data, function (index, group) {
-              select.append(
-                  $('<option></option>')
-                      .attr('id', 'group-select-option-' + group.group_id)
-                      .val(group.group_id)
-                      .text(group.name)
-                      .attr('data-permission', group.permission)
-              );
-            });
-        },
-        error: function() {
-            $('#group-select').html('<option value="" disabled>Error loading groups</option>');
-        }
+        $.each(data, function (index, group) {
+          select.append(
+            $('<option></option>')
+              .attr('id', 'group-select-option-' + group.group_id)
+              .val(group.group_id)
+              .text(group.name)
+              .attr('data-permission', group.permission)
+          );
+        });
+      },
+      error: function () {
+        $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+      }
     });
   }
 }

@@ -16,26 +16,6 @@ body {
     color: red;
 }
 
-#loading {
-    display: none;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-}
-
-#calendar {
-    max-width: 1000px;
-    margin: auto auto;
-    padding: 30px 15px;
-    background: rgb(255, 255, 255);
-    border-radius: 1%;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-}
-
-.container {
-   padding-bottom: 15px;
-}
-
 /*!
  * FullCalendar v3.9.0
  * Docs & License: https://fullcalendar.io/
