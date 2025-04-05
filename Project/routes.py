@@ -137,6 +137,7 @@ def create_group():
                 db.session.add(newMember)
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to add new group to the database"
     
         return jsonify(success=True)
@@ -201,6 +202,7 @@ def check_invites():
             invite.read_status = 'Read'
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to edit invite status"
         return jsonify(success=True)
 
@@ -269,6 +271,7 @@ def get_notifications():
             db.session.commit()
             return jsonify(success=True)
         except:
+            db.session.rollback()
             return "Unable to edit read status"
 
 # To get the groups for group-select
@@ -330,6 +333,7 @@ def return_data(group_id):
                 db.session.add(newGroup)
                 db.session.commit()
             except:
+                db.session.rollback()
                 return "Unable to add group 1 to the database"
         
         # Get all the events from the database created by current user
@@ -455,29 +459,56 @@ def get_info(group_id):
             db.session.delete(group)
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to delete group from the database"
         return jsonify(success=True)
 
     else:
         group_info = request.get_json()
         try:
+            # Update basic group info
             group.group_name = group_info['name']
             group.description = group_info['description']
-            members = Member.query.filter_by(group_id=group_id).all()
-            for member in members:
-                db.session.delete(member)
-            for mem in group_info['members']:
-                user = User.query.filter_by(email=mem.email.lower()).first()
-                if user is None:
-                    continue
-                newMember = Member(
-                    user_id = user.user_id,
-                    group_id = group.group_id,
-                    permission = mem.role
-                )
-                db.session.add(newMember)
+            
+            # Handle member changes
+            current_members = {m.user_id: m for m in Member.query.filter_by(group_id=group_id).all()}
+            users_cache = {}  # Cache user lookups
+            
+            # Process new members
+            for new_mem in group_info['new_members']:
+                email = new_mem['email'].lower()
+                if email not in users_cache:
+                    users_cache[email] = User.query.filter_by(email=email).first()
+                user = users_cache[email]
+                if user:
+                    newMember = Member(
+                        user_id=user.user_id,
+                        group_id=group.group_id,
+                        permission=new_mem['role']
+                    )
+                    db.session.add(newMember)
+            
+            # Process updated members
+            for updated_mem in group_info['updated_members']:
+                email = updated_mem['email'].lower()
+                if email not in users_cache:
+                    users_cache[email] = User.query.filter_by(email=email).first()
+                user = users_cache[email]
+                if user and user.user_id in current_members:
+                    current_members[user.user_id].permission = updated_mem['role']
+            
+            # Process deleted members
+            for deleted_mem in group_info['deleted_members']:
+                email = deleted_mem['email'].lower()
+                if email not in users_cache:
+                    users_cache[email] = User.query.filter_by(email=email).first()
+                user = users_cache[email]
+                if user and user.user_id in current_members:
+                    db.session.delete(current_members[user.user_id])
+            
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to update group info"
         return jsonify(success=True)
 
@@ -513,6 +544,7 @@ def add_event():
             db.session.add(newGroup)
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to add event to the database"
    
     try:
@@ -532,6 +564,7 @@ def add_event():
         try:
             db.session.commit()
         except:
+            db.session.rollback()
             return "Unable to add the participants"
     except:
         return "Unable to add event to the database"
