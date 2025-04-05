@@ -811,7 +811,7 @@ function load_calendar() {
       $('#groupDescDisplay').text(originalData.description);
     }
     else {
-      $('#groupDescDisplay').text("No Description");
+      $('#groupDescDisplay').text("No description");
     }
     renderMembersList();
 
