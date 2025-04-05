@@ -427,8 +427,11 @@ function load_calendar() {
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').hide();
 
-    $('#eventStart').val(arg.startStr);
-    $('#eventEnd').val(arg.endStr);
+    // Set the Start and End time in the modal
+    const startDate = new Date(arg.startStr);
+    const endDate = new Date(arg.endStr);
+    $('#eventStart').val(startDate.toISOString().slice(0, 16));
+    $('#eventEnd').val(endDate.toISOString().slice(0, 16));
 
     // Save event handler
     const saveHandler = (e) => saveCalendarEvent(e, calendar);
