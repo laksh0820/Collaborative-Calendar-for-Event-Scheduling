@@ -172,9 +172,17 @@ function load_calendar() {
     } else {
       document.getElementById("participants-section").style.display = 'none';
       document.getElementById("modal-view-add-participant-select").style.display = 'none';
-      document.getElementById("modalCloseViewEvent").style.display = 'none';
-      document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
-      document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
+
+      if (info.event.extendedProps.event_permission === 'Viewer') {
+        document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
+        document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
+        document.getElementById("modalCloseViewEvent").style.display = 'block';
+      }
+      else {
+        document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
+        document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
+        document.getElementById("modalCloseViewEvent").style.display = 'none';
+      }
     }
 
     setupEventActions(info, modal);
@@ -244,7 +252,7 @@ function load_calendar() {
     const group_id = document.getElementById('group-select').value;
     const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
-    if (group_permission === 'Viewer') {
+    if (group_permission === 'Viewer' || (group_id == 1 && info.event.extendedProps.event_permission === 'Viewer')) {
       document.getElementById('removeEvent').style.display = 'none';
       document.getElementById('saveViewEvent').style.display = 'none';
     } else {
@@ -996,36 +1004,13 @@ function load_calendar() {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function showFlash(message, type) {
-      const icon = type === 'success' ? 'bx-check-circle' : 'bx-error';
-      const color = type === 'success' ? 'lawngreen' : 'red';
-
-      const flashHTML = `
-    <div class="alert alert-dismissible fade show" role="alert"
-        style="background-color:white; color:black; padding:10px; margin-right:5px;">
-        <i class="bx ${icon}" style="color:${color};"></i>
-        ${message}
-    </div>`;
-      const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
-
-      setTimeout(function () {
-        const element = document.querySelector('.alert');
-        if (element) {
-          element.style.opacity = '0';
-          setTimeout(function () {
-            element.remove();
-          }, 2000);
-        }
-      }, 1000);
-    }
-
     function refreshGroupList() {
       $.ajax({
         url: '/get_groups',
         type: 'GET',
         success: function (data) {
           const select = $('#group-select');
-          select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
+          select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
 
           $.each(data, function (index, group) {
             select.append(

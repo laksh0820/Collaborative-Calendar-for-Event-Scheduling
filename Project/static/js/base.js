@@ -43,7 +43,7 @@ if (notificationBtn !== null) {
         if (notificationPopover.classList.contains('d-none')) {
             // Remove d-none class to show the popover
             notificationPopover.classList.remove('d-none');
-    
+
             // Use requestAnimationFrame to ensure the d-none removal is processed
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -260,7 +260,7 @@ function create_group() {
                     type: 'GET',
                     success: function (data) {
                         const select = $('#group-select');
-                        select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
+                        select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
 
                         $.each(data, function (index, group) {
                             select.append(
@@ -381,7 +381,7 @@ function check_invites() {
     $.ajax({
         url: '/check_invites',
         type: 'GET',
-        success: function(response) {
+        success: function (response) {
             const container = $('#invitesContainer');
             container.empty();
 
@@ -477,31 +477,31 @@ function check_invites() {
             }
 
             // Setup description click handlers
-            $('.description-short').click(function() {
+            $('.description-short').click(function () {
                 const fullDesc = $(this).data('full-desc');
                 const title = $(this).data('title');
-                
+
                 $('#descriptionPopupTitle').text(title);
                 $('#descriptionPopupContent').html(fullDesc.replace(/\n/g, '<br>'));
-                
+
                 const descModal = new bootstrap.Modal(document.getElementById('descriptionPopup'));
                 descModal.show();
             });
 
             // Setup accept/decline button handlers
-            $('.accept-btn').click(function() {
+            $('.accept-btn').click(function () {
                 const id = $(this).data('id');
                 const type = $(this).data('type');
                 respondToInvite(id, type, 'Accepted');
             });
 
-            $('.decline-btn').click(function() {
+            $('.decline-btn').click(function () {
                 const id = $(this).data('id');
                 const type = $(this).data('type');
                 respondToInvite(id, type, 'Declined');
             });
         },
-        error: function() {
+        error: function () {
             $('#invitesContainer').html(
                 '<div class="alert alert-danger">Error loading invitations. Please try again later.</div>'
             );
@@ -518,14 +518,14 @@ function check_invites() {
                 invite_type: type,
                 status: status
             }),
-            success: function(response) {
+            success: function (response) {
                 // Update the group-select 
                 $.ajax({
                     url: '/get_groups',
                     type: 'GET',
                     success: function (data) {
                         const select = $('#group-select');
-                        select.empty().append('<option value="1" data-permission="Admin">Dashboard</option>');
+                        select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
 
                         $.each(data, function (index, group) {
                             select.append(
@@ -541,11 +541,11 @@ function check_invites() {
                         $('#group-select').html('<option value="" disabled>Error loading groups</option>');
                     }
                 });
-                
+
                 // Remove the invite from view
-                $(`#invite-${id}`).fadeOut(300, function() {
+                $(`#invite-${id}`).fadeOut(300, function () {
                     $(this).remove();
-                    
+
                     // Check if no invites left
                     const $invites = $('#invitesContainer .list-group-item[id^="invite-"]');
                     if ($invites.length === 0) {
@@ -556,10 +556,10 @@ function check_invites() {
                 });
 
                 // Show success message
-                const message = status === 'Accepted' 
-                    ? 'Invitation accepted successfully' 
+                const message = status === 'Accepted'
+                    ? 'Invitation accepted successfully'
                     : 'Invitation declined';
-                
+
                 const flashHTML = `
                 <div class="alert alert-dismissible fade show" role="alert"
                     style="background-color:white; color:black; padding:10px; margin-right:5px;" id="invite-response-success">
@@ -569,17 +569,17 @@ function check_invites() {
                 document.body.insertAdjacentHTML('beforeend', flashHTML);
 
                 // Auto-remove after 3 seconds
-                setTimeout(function() {
+                setTimeout(function () {
                     const flashElement = document.getElementById('invite-response-success');
                     if (flashElement) {
                         flashElement.style.opacity = '0';
-                        setTimeout(function() {
+                        setTimeout(function () {
                             flashElement.remove();
                         }, 2000);
                     }
                 }, 1000);
             },
-            error: function(response) {
+            error: function (response) {
                 alert('Error processing your response. Please try again.');
             }
         });
