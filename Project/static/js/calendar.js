@@ -129,9 +129,6 @@ function load_calendar() {
     nowIndicator: true,
     select: function (arg) {
       handleCalendarSelection(arg);
-    },
-    loading: function (bool) {
-      $('#loading').toggle(bool);
     }
   });
 
@@ -156,10 +153,28 @@ function load_calendar() {
     );
 
     const group_id = document.getElementById('group-select').value;
+    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
     if (group_id != 1) {
-      setupParticipantsSection(info, modal);
+      document.getElementById("participants-section").style.display = 'block';
+      if (group_permission !== 'Viewer') {
+        document.getElementById("modal-view-add-participant-select").style.display = 'block';
+        document.getElementById("modalCloseViewEvent").style.display = 'block';
+        document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
+        document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
+      }
+      else {
+        document.getElementById("modal-view-add-participant-select").style.display = 'none';
+        document.getElementById("modalCloseViewEvent").style.display = 'block';
+        document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
+        document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
+      }
+      setupParticipantsSection(info, modal, group_permission);
     } else {
       document.getElementById("participants-section").style.display = 'none';
+      document.getElementById("modal-view-add-participant-select").style.display = 'none';
+      document.getElementById("modalCloseViewEvent").style.display = 'none';
+      document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
+      document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
     }
 
     setupEventActions(info, modal);
@@ -168,15 +183,14 @@ function load_calendar() {
     modal.show();
   }
 
-  function setupParticipantsSection(info, modal) {
-    document.getElementById("participants-section").style.display = 'block';
+  function setupParticipantsSection(info, modal, permission) {
     const participantsList = document.getElementById('participants-list');
     participantsList.innerHTML = '';
 
     const participants = info.event.extendedProps.participants || [];
     if (participants.length > 0) {
       participants.forEach(participant => {
-        renderParticipant(info, participant, participants.length > 1);
+        renderParticipant(info, participant, participants.length > 1, permission);
       });
     } else {
       const noParticipants = document.createElement('p');
@@ -185,42 +199,44 @@ function load_calendar() {
       participantsList.appendChild(noParticipants);
     }
 
-    // Participant select focus handler
-    const selectFocusHandler = () => updateParticipantSelect(info);
-    $('#updateParticipantSelect').off('focus').on('focus', selectFocusHandler);
-    calendarResources.modalListeners.push({
-      element: $('#updateParticipantSelect'),
-      event: 'focus',
-      handler: selectFocusHandler
-    });
-
-    // Add participant handler
-    const addClickHandler = () => viewAddParticipant(info);
-    const addBtn = document.getElementById('modal-view-add-participant');
-    if (addBtn) {
-      addBtn.addEventListener('click', addClickHandler);
+    if (permission !== 'Viewer') {
+      // Participant select focus handler
+      const selectFocusHandler = () => updateParticipantSelect(info);
+      $('#updateParticipantSelect').off('focus').on('focus', selectFocusHandler);
       calendarResources.modalListeners.push({
-        element: addBtn,
-        event: 'click',
-        handler: addClickHandler
+        element: $('#updateParticipantSelect'),
+        event: 'focus',
+        handler: selectFocusHandler
       });
-    }
 
-    // Enter key handler
-    const keypressHandler = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        viewAddParticipant(info);
+      // Add participant handler
+      const addClickHandler = () => viewAddParticipant(info);
+      const addBtn = document.getElementById('modal-view-add-participant');
+      if (addBtn) {
+        addBtn.addEventListener('click', addClickHandler);
+        calendarResources.modalListeners.push({
+          element: addBtn,
+          event: 'click',
+          handler: addClickHandler
+        });
       }
-    };
-    const selectInput = document.getElementById('updateParticipantSelect');
-    if (selectInput) {
-      selectInput.addEventListener('keypress', keypressHandler);
-      calendarResources.modalListeners.push({
-        element: selectInput,
-        event: 'keypress',
-        handler: keypressHandler
-      });
+
+      // Enter key handler
+      const keypressHandler = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          viewAddParticipant(info);
+        }
+      };
+      const selectInput = document.getElementById('updateParticipantSelect');
+      if (selectInput) {
+        selectInput.addEventListener('keypress', keypressHandler);
+        calendarResources.modalListeners.push({
+          element: selectInput,
+          event: 'keypress',
+          handler: keypressHandler
+        });
+      }
     }
   }
 
@@ -230,8 +246,11 @@ function load_calendar() {
 
     if (group_permission === 'Viewer') {
       document.getElementById('removeEvent').style.display = 'none';
+      document.getElementById('saveViewEvent').style.display = 'none';
     } else {
       document.getElementById('removeEvent').style.display = 'block';
+      document.getElementById('saveViewEvent').style.display = 'block';
+
       const removeHandler = (e) => {
         e.preventDefault();
         removeEvent(info.event);
@@ -242,21 +261,21 @@ function load_calendar() {
         event: 'click',
         handler: removeHandler
       });
-    }
 
-    const saveHandler = (e) => {
-      e.preventDefault();
-      saveViewEvent(info.event);
-    };
-    $('#saveViewEvent').on('click', saveHandler);
-    calendarResources.modalListeners.push({
-      element: $('#saveViewEvent'),
-      event: 'click',
-      handler: saveHandler
-    });
+      const saveHandler = (e) => {
+        e.preventDefault();
+        saveViewEvent(info.event);
+      };
+      $('#saveViewEvent').on('click', saveHandler);
+      calendarResources.modalListeners.push({
+        element: $('#saveViewEvent'),
+        event: 'click',
+        handler: saveHandler
+      });
+    }
   }
 
-  function renderParticipant(info, participant, showRemoveButton) {
+  function renderParticipant(info, participant, showRemoveButton, permission) {
     const participantsList = document.getElementById('participants-list');
     const participantElement = document.createElement('div');
     participantElement.className = 'participant';
@@ -286,7 +305,7 @@ function load_calendar() {
 
     participantElement.appendChild(infoContainer);
 
-    if (showRemoveButton) {
+    if (showRemoveButton && permission !== 'Viewer') {
       const removeElement = document.createElement('button');
       removeElement.className = "modal-view-participant-remove-button";
       removeElement.textContent = "Remove";
@@ -587,6 +606,9 @@ function load_calendar() {
     currentUser.innerHTML = userEmail;
     container.appendChild(currentUser);
 
+    // Add participants for events functionality
+    const participants = [];
+
     const addHandler = () => addParticipant();
     $('#addParticipantBtn').off('click').on('click', addHandler);
     calendarResources.modalListeners.push({
@@ -608,6 +630,51 @@ function load_calendar() {
         element: selectInput,
         event: 'keypress',
         handler: keyHandler
+      });
+    }
+
+    function addParticipant() {
+      const input = document.getElementById('participantSelect');
+      const name = input.value.trim();
+
+      if (name && !participants.includes(name)) {
+        participants.push(name);
+        renderParticipantsList();
+        input.value = '';
+      }
+    }
+
+    function removeParticipant(name) {
+      const index = participants.indexOf(name);
+      if (index !== -1) {
+        participants.splice(index, 1);
+        renderParticipantsList();
+      }
+    }
+
+    function renderParticipantsList() {
+      const container = document.getElementById('eventParticipantsList');
+      container.innerHTML = '';
+
+      const userEmail = document.querySelector('meta[name="user-email"]').content;
+      const currentUser = document.createElement('span');
+      currentUser.className = 'badge d-flex align-items-center';
+      currentUser.style = 'background:rgb(30, 18, 82);'
+      currentUser.innerHTML = `${userEmail}`;
+      container.appendChild(currentUser);
+
+      participants.forEach(name => {
+        const badge = document.createElement('span');
+        badge.className = 'badge d-flex align-items-center';
+        badge.style = 'background:rgb(30, 18, 82);'
+        badge.innerHTML = `
+                ${name}
+                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
+            `;
+        container.appendChild(badge);
+
+        // Add event listener to remove button
+        badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
       });
     }
   }
@@ -643,9 +710,7 @@ $(document).ready(function () {
       success: function (data) {
         const select = $('#participantSelect');
         select.empty().append('<option value="" disabled selected>Select a participant</option>');
-
         const userEmail = document.querySelector('meta[name="user-email"]').content;
-
         data.forEach(member => {
           if (member.email != userEmail) {
             select.append(

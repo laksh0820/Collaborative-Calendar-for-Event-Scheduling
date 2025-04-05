@@ -140,7 +140,7 @@ body {
   opacity: 1;
   top: 50%;
   z-index: 99999;
-} 
+}
 
 .sidebar ul li input {
   visibility: hidden;
@@ -398,23 +398,91 @@ body {
   padding: 20px;
 }
 
+div#notificationPopover.show {
+  opacity: 1 !important; /* Final opacity */
+  transform: translateY(0); /* Final transform */
+  pointer-events: auto; /* Enable pointer events */
+  width: 350px !important;
+  height: auto !important;
+}
+
+/* Hide the d-none class transition */
+div#notificationPopover.d-none {
+  display: block !important;
+  top: 60px !important;
+  transform: translateY(-20px);
+  opacity: 0 !important; /* Start invisible */
+  width: 350px !important;
+  height: auto !important;
+}
+
+/* Notification Popover Styles */
 div#notificationPopover {
   position: fixed;
   right: 10px;
+  top: 60px !important;   /* Start off-screen */
+  opacity: 0 !important; /* Start invisible */
   z-index: 999;
   background-color: #fff;
   border-radius: 10px;
+  max-height: 400px;
+  width: 350px !important;
+  height: auto !important;
+  overflow-y: auto;
+  transform: translateY(-20px);
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+#Notification-Header {
+  color: #000000;
+  padding: 5px;
+  border-radius: 10px 10px 0 0;
 }
 
 .notification-item {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgb(0, 0, 0, 0.1);
   cursor: pointer;
 }
 
 .notification-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgb(204, 234, 255);
+}
+
+.notification-item.unread.last-notification:hover {
+  background-color: rgb(204, 234, 255);
+}
+
+.notification-item.last-notification:hover {
+  background-color: rgb(204, 234, 255);
+}
+
+.notification-item.unread:hover {
+  background-color: rgb(204, 234, 255);
 }
 
 .notification-item.unread {
-  background-color: rgba(13, 110, 253, 0.05);
+  background-color: rgb(236, 247, 255);
+}
+
+.notification-item.last-notification {
+  border-radius: 0px 0px 10px 10px;
+}
+
+.p-3.notification-content {
+  padding-top: 8px !important;
+  padding-bottom: 3px !important;
+}
+
+.p-3.notification-content p {
+  text-wrap: wrap;
+}
+
+.notification-footer {
+  text-align: right;
+  padding-top: 0px !important;
+  color: #0080cff1;
+  font-weight: 600;
 }

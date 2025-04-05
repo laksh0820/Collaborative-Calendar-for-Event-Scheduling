@@ -5,9 +5,41 @@ from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
 from Project import app,db
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 import os
+
+# Helper function to convert datetime to human-readable format
+def human_readable_delta(dt):
+    now = datetime.now(timezone.utc)  # Use UTC time instead of local
+    if dt.tzinfo is None:
+        # Localize naive datetime to UTC
+        dt = dt.replace(tzinfo=timezone.utc)
+    delta = now - dt
+    seconds = delta.total_seconds()
+        
+    if seconds < 0:
+        return "in the future"
+    
+    intervals = (
+        ('year', 31536000),    # 365 * 24 * 3600
+        ('month', 2592000),    # 30 * 24 * 3600
+        ('week', 604800),      # 7 * 24 * 3600
+        ('day', 86400),       # 24 * 3600
+        ('hour', 3600),
+        ('minute', 60),
+        ('second', 1)
+    )
+
+    for name, count in intervals:
+        value = int(seconds // count)
+        if value >= 1:
+            if value == 1:
+                return f"{value} {name} ago"
+            else:
+                return f"{value} {name}s ago"
+    
+    return "Just Now"
 
 @app.route('/')
 def base():        
@@ -171,6 +203,73 @@ def check_invites():
             return "Unable to edit invite status"
         return jsonify(success=True)
 
+# To get the notifications for the user
+@app.route('/get_notifications', methods=['GET', 'POST'])
+@login_required
+# Get the unread events and groups for the current user
+def get_notifications():
+    if (request.method == 'GET'):
+        # For groups
+        events1 = (
+            db.session.query()
+            .select_from(Member)
+            .filter(Member.read_status == 'Unread', Member.user_id == current_user.user_id, Member.permission != 'Admin')
+            .join(Group, Member.group_id == Group.group_id)
+            .add_columns(Group.group_id,Group.group_name,Member.invite_time)
+            .order_by(Member.invite_time.desc())
+            .all()
+        )
+
+        # For events
+        events2 = (
+            db.session.query()
+            .select_from(Participate)
+            .join(Event, Participate.event_id == Event.event_id)
+            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id, Event.creator != current_user.get_id())
+            .add_columns(Participate.event_id,Event.event_name,Participate.invite_time)
+            .order_by(Participate.invite_time.desc())
+            .all()
+        )
+
+        # Combine the two lists of events and sort them by invite_time in descending order
+        events = sorted(events1 + events2, key=lambda x: x.invite_time, reverse=True)
+
+        # Create a list of dictionaries to store the event details
+        # Take care of event and group names
+        events_list = []
+        for event in events:
+            if hasattr(event, 'group_name'):
+                events_list.append({
+                    'id': event.group_id,
+                    'name': event.group_name,
+                    'passed_time': human_readable_delta(event.invite_time),
+                    'type': 'group'
+                })
+            else:
+                events_list.append({
+                    'id': event.event_id,
+                    'name': event.event_name,
+                    'passed_time': human_readable_delta(event.invite_time),
+                    'type': 'event'
+                })
+
+        return jsonify(events_list)
+
+    else:
+        response = request.get_json()
+
+        # Mark the notification as read
+        try:
+            if response['type'] == 'group':
+                notification = Member.query.filter_by(group_id=response['id'], user_id=current_user.get_id()).first()
+            else:
+                notification = Participate.query.filter_by(event_id=response['id'], user_id=current_user.get_id()).first()
+            notification.read_status = 'Read'
+            db.session.commit()
+            return jsonify(success=True)
+        except:
+            return "Unable to edit read status"
+
 # To get the groups for group-select
 @app.route('/get_groups')
 @login_required
@@ -180,7 +279,7 @@ def get_groups():
         .select_from(Group)
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id)
+        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
         .add_columns(Group.group_id,Group.group_name,Member.permission)
         .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
@@ -203,7 +302,7 @@ def get_calendar():
         .select_from(Group)
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id)
+        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
         .add_columns(Group.group_id,Group.group_name,Member.permission)
         .group_by(Group.group_id,Group.group_name,Member.permission)
         .all()
@@ -233,7 +332,18 @@ def return_data(group_id):
                 return "Unable to add group 1 to the database"
         
         # Get all the events from the database created by current user
-        events = current_user.created_events
+        events = []
+        for event in current_user.created_events:
+            if event.group_id == 1:
+                events.append(event)
+        group_events = (
+            db.session.query(Event)
+            .join(Participate, Event.event_id == Participate.event_id)
+            .filter(Participate.user_id == current_user.user_id)
+            .all()
+        )
+        for event in group_events:
+            events.append(event)
         
         events_data = []
         for event in events:
@@ -288,7 +398,7 @@ def get_members(group_id):
         db.session.query()
         .select_from(User)
         .join(Member, Member.user_id == User.user_id)
-        .filter(Member.group_id == group_id)
+        .filter(Member.group_id == group_id, Member.status == 'Accepted')
         .add_columns(User.name,User.email)
         .all()
     )
