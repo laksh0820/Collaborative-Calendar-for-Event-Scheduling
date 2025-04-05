@@ -3,6 +3,80 @@ let sidebar = document.querySelector('.sidebar');
 let searchBtn = document.querySelector('.bx-search');
 let createGrp = document.querySelector('#create-group-link');
 let checkInvt = document.querySelector('#check-invites-link');
+const notificationBtn = document.getElementById('notificationBtn');
+const notificationPopover = document.getElementById('notificationPopover');
+const notificationBadge = document.getElementById('notificationBadge');
+
+// Fetch number of unread notifications on page load
+document.addEventListener('DOMContentLoaded', function () {
+    // Check if the notification badge exists before trying to access it
+    if (notificationBadge === null) return;
+
+    $.ajax({
+        url: '/get_notifications',
+        type: 'GET',
+        success: function (response) {
+            const unreadCount = response.length;
+            notificationBadge.textContent = unreadCount;
+            if (unreadCount > 0) {
+                // Show the badge if there are unread notifications
+                if (notificationBadge.classList.contains('d-none')) {
+                    notificationBadge.classList.remove('d-none');
+                }
+            } else {
+                // Hide the badge if there are no unread notifications
+                if (!notificationBadge.classList.contains('d-none')) {
+                    notificationBadge.classList.add('d-none');
+                }
+            }
+        },
+        error: function () {
+            console.error('Error fetching notifications count');
+        }
+    });
+});
+
+// Toggle notification popover
+if (notificationBtn !== null) {
+    notificationBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (notificationPopover.classList.contains('d-none')) {
+            // Remove d-none class to show the popover
+            notificationPopover.classList.remove('d-none');
+    
+            // Use requestAnimationFrame to ensure the d-none removal is processed
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    notificationPopover.classList.add('show');
+                    get_notifications(); // Fetch notifications when opening the popover
+                });
+            });
+        }
+        else {
+            notificationPopover.classList.remove('show');
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                notificationPopover.classList.add('d-none');
+            }, 300); // Match the transition duration
+        }
+    });
+
+    // Disable text selection on double click with mousedown
+    notificationBtn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+    }, false);
+}
+
+
+// Close notification popover when clicking outside
+document.addEventListener('click', (e) => {
+    if (notificationPopover !== null && !notificationPopover.contains(e.target) && e.target !== notificationBtn) {
+        notificationPopover.classList.remove('show');
+        setTimeout(() => {
+            notificationPopover.classList.add('d-none');
+        }, 300);
+    }
+});
 
 btn.addEventListener('click', () => {
     sidebar.classList.toggle('active');
@@ -509,5 +583,115 @@ function check_invites() {
                 alert('Error processing your response. Please try again.');
             }
         });
+    }
+}
+
+// Function to get notifications
+function get_notifications() {
+    $.ajax({
+        url: '/get_notifications',
+        type: 'GET',
+        success: function (response) {
+            // Process and display notifications
+            const notificationsContainer = $('#notificationList');
+            notificationsContainer.empty();
+
+            // Update the number of unread notifications
+            const unreadCount = response.length;
+            if (unreadCount > 0) {
+                notificationBadge.textContent = unreadCount;
+                notificationBadge.classList.remove('d-none');
+            } else {
+                notificationBadge.classList.add('d-none');
+            }
+
+            // No notifications available
+            if (response.length === 0) {
+                notificationsContainer.html('<div class="text-center py-3"><p>No pending invitations</p></div>');
+                return;
+            }
+
+            response.forEach((notification, index, array) => {
+                // Check if this notification is the last one in the list
+                if (index === array.length - 1) {
+                    const notificationHTML = `
+                    <div class="notification-item ${(notification.read_status === "Read") ? '' : 'unread'} last-notification" data-id="${notification.id}" data-type="${notification.type}">
+                        <div class="p-3 notification-content">
+                            <p class="mb-0">You have been invited to ${(notification.type === 'group') ? 'group ' : 'event '} ${notification.name}</p>
+                        </div>
+                        <div class="notification-footer p-2">${notification.passed_time}</div>
+                    </div>`;
+                    notificationsContainer.append(notificationHTML);
+                }
+                else {
+                    const notificationHTML = `
+                    <div class="notification-item ${(notification.read_status === "Read") ? '' : 'unread'}" data-id="${notification.id}" data-type="${notification.type}">
+                        <div class="p-3 notification-content">
+                            <p class="mb-0">You have been invited to ${(notification.type === 'group') ? 'group ' : 'event '} ${notification.name}</p>
+                        </div>
+                        <div class="notification-footer p-2">${notification.passed_time}</div>
+                    </div>`;
+                    notificationsContainer.append(notificationHTML);
+                }
+            });
+
+            /* Setup click handlers for notifications */
+            // Mark notifications as read when clicked
+            const unread_notifications = document.querySelectorAll('.notification-item.unread');
+            unread_notifications.forEach(notification => {
+                notification.addEventListener('click', () => {
+                    // Check if notification is already read
+                    if (!notification.classList.contains('unread')) return;
+
+                    const notification_id = notification.getAttribute('data-id');
+                    const notification_type = notification.getAttribute('data-type');
+                    console.log(notification_id, notification_type);
+
+                    // Send a request to mark the notification as read
+                    $.ajax({
+                        url: '/get_notifications',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: notification_id,
+                            type: notification_type
+                        }),
+                        success: function () {
+                            notification.classList.remove('unread');
+                            updateNotificationCount(); // Update the notification count
+                        },
+                        error: function () {
+                            console.error('Error marking notification as read');
+                        }
+                    });
+                });
+            });
+
+            // Disable text selection on double click with mousedown
+            unread_notifications.forEach(notification => {
+                notification.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                }, false);
+            });
+        },
+        error: function () {
+            alert('Error loading notifications. Please try again later.');
+        },
+    });
+
+    // Update notification badge count
+    function updateNotificationCount() {
+        const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+        const notificationBadge = document.getElementById('notificationBadge');
+
+        // Check if the badge is hidden, then unhide it
+        if (notificationBadge.classList.contains('d-none')) {
+            notificationBadge.classList.remove('d-none');
+        }
+        // Update the badge count
+        notificationBadge.textContent = unreadCount;
+        if (unreadCount === 0) {
+            notificationBadge.classList.add('d-none');
+        }
     }
 }
