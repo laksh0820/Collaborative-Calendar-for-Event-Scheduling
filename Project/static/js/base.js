@@ -69,6 +69,22 @@ function create_group() {
             </div>
         </div>`;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Add member functionality
+        document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            addMember();
+        });
+        document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addMember();
+            }
+        });
+
+        // Submit and Cancel button functionality
+        document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
+        document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
     }
 
     // Initialize modal
@@ -80,22 +96,6 @@ function create_group() {
 
     const members = [];
     const permissions = [];
-
-    // Add member functionality
-    document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
-        e.preventDefault();
-        addMember();
-    });
-    document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addMember();
-        }
-    });
-
-    // Submit and Cancel button functionality
-    document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
-    document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
 
     function addMember() {
         if ($(`#memberInput`).hasClass('is-invalid')) {
@@ -332,11 +332,11 @@ function check_invites() {
                     </div>
                 </div>
                 <div class="d-flex flex-shrink-0">
-                    <button class="btn btn-sm btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="group">
-                        <i class="bi bi-check-lg"></i>
+                    <button class="btn btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="group">
+                        <i class="bx bx-check" style="font-size:1.5rem; font-weight:bold;"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger decline-btn" data-id="${invite.id}" data-type="group">
-                        <i class="bi bi-x-lg"></i>
+                    <button class="btn btn-outline-danger decline-btn" data-id="${invite.id}" data-type="group">
+                        <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
                     </button>
                 </div>
             </div>`;
@@ -348,6 +348,10 @@ function check_invites() {
                     <div class="d-flex align-items-center">
                         <span class="badge bg-warning text-dark me-2">EVENT</span>
                         <strong class="text-truncate">${invite.name}</strong>
+                        <span class="text-muted ms-2">
+                            <i class="bx bx-group"></i>
+                            ${invite.group}
+                        </span>
                     </div>
                     <div class="d-flex mt-1">
                         <small class="text-muted text-truncate description-short" 
@@ -361,7 +365,7 @@ function check_invites() {
                     <div class="d-flex flex-wrap mt-1 gap-2">
                         <small class="text-muted">
                             <i class="bi bi-clock me-1"></i>
-                            ${invite.start_time}
+                            ${invite.start_time} - ${invite.end_time}
                         </small>
                         <small class="text-muted">
                             <i class="bi bi-person me-1"></i>
@@ -371,10 +375,10 @@ function check_invites() {
                 </div>
                 <div class="d-flex flex-shrink-0">
                     <button class="btn btn-sm btn-outline-success me-2 accept-btn" data-id="${invite.id}" data-type="event">
-                        <i class="bi bi-check-lg"></i>
+                        <i class="bx bx-check" style="font-size:1.5rem; font-weight:bold;"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger decline-btn" data-id="${invite.id}" data-type="event">
-                        <i class="bi bi-x-lg"></i>
+                        <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
                     </button>
                 </div>
             </div>`;
@@ -407,13 +411,13 @@ function check_invites() {
             $('.accept-btn').click(function() {
                 const id = $(this).data('id');
                 const type = $(this).data('type');
-                respondToInvite(id, type, 'accept');
+                respondToInvite(id, type, 'Accepted');
             });
 
             $('.decline-btn').click(function() {
                 const id = $(this).data('id');
                 const type = $(this).data('type');
-                respondToInvite(id, type, 'decline');
+                respondToInvite(id, type, 'Declined');
             });
         },
         error: function() {
@@ -423,7 +427,7 @@ function check_invites() {
         }
     });
 
-    function respondToInvite(id, type, action) {
+    function respondToInvite(id, type, status) {
         $.ajax({
             url: '/check_invites',
             type: 'POST',
@@ -431,24 +435,24 @@ function check_invites() {
             data: JSON.stringify({
                 invite_id: id,
                 invite_type: type,
-                action: action
+                status: status
             }),
             success: function(response) {
-                // Remove the invite card from view
+                // Remove the invite from view
                 $(`#invite-${id}`).fadeOut(300, function() {
                     $(this).remove();
                     
                     // Check if no invites left
-                    if ($('#invitesContainer').children().length === 
-                        ($('#invitesContainer h5').length + 1)) { // +1 for potential error message
+                    const $invites = $('#invitesContainer .list-group-item[id^="invite-"]');
+                    if ($invites.length === 0) {
                         $('#invitesContainer').append(
-                            '<div class="text-center py-3"><p>No more pending invitations</p></div>'
+                            '<div class="text-center py-3"><p>No pending invitations</p></div>'
                         );
                     }
                 });
 
                 // Show success message
-                const message = action === 'accept' 
+                const message = status === 'Accepted' 
                     ? 'Invitation accepted successfully' 
                     : 'Invitation declined';
                 

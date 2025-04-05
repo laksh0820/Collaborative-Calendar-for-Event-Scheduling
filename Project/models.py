@@ -4,6 +4,7 @@ from flask import redirect,url_for,flash
 from flask_login import UserMixin,LoginManager,current_user
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy import inspect
+from datetime import datetime, timezone
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -51,18 +52,29 @@ class Participate(db.Model):
     participate_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
     event_id = db.Column(db.Integer, db.ForeignKey('event.event_id'))
-    status = db.Column(db.String(50), nullable=False)
+    invite_time = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    read_status = db.Column(db.String(50), default='Unread', nullable=False)
+    status = db.Column(db.String(50), default='Pending', nullable=False)
     
     __table_args__ = (
         db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
+        db.CheckConstraint("read_status IN ('Read', 'Unread')"),
     )
 
 class Member(db.Model):
     member_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
     group_id = db.Column(db.Integer, db.ForeignKey('group.group_id'))
+    invite_time = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    read_status = db.Column(db.String(50), default='Unread', nullable=False)
     permission = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(50), default='Pending', nullable=False)
     
     __table_args__ = (
         db.CheckConstraint("permission IN ('Admin', 'Editor', 'Viewer')"),
+        db.CheckConstraint("read_status IN ('Read', 'Unread')"),
+        db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
     )
+
+# You have been added to Group Name
+# You have been added to Event Name
