@@ -140,7 +140,20 @@
 		padding: 0.5rem;
 	}
 
+	#closeAddEvent {
+		font-size: 1.5rem;
+		color: #6b7280;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0.5rem;
+	}
+
 	#closeViewEvent:hover {
+		color: #374151;
+	}
+
+	#closeAddEvent:hover {
 		color: #374151;
 	}
 
@@ -277,11 +290,14 @@
 	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
 			<form id="add-event">
+				<div class="modal-header" style="justify-content: space-between;">
+					<h4 class="modal-title">Add Event Detail</h4>
+					<button type="button" data-bs-dismiss="modal" id="closeAddEvent">×</button>
+				</div>
 				<div class="modal-body">
-					<h4>Add Event Detail</h4>
 					<div class="form-group">
 						<label>Event name</label>
-						<input type="text" class="form-control" name="ename" id="eventTitle">
+						<input type="text" class="form-control" name="ename" id="eventTitle" placeholder="Enter name of event">
 						<div class="invalid-feedback"></div>
 					</div>
 					<div class="form-group">
@@ -297,7 +313,7 @@
 					<div class="form-group">
 						<label>Event Description</label>
 						<textarea class="form-control" name="edesc" id="eventDescription" rows="6"
-							style="min-height: 100px; resize: vertical;"></textarea>
+							style="min-height: 100px; resize: vertical;" placeholder="Enter event description"></textarea>
 					</div>
 					<div class="form-group" id="participants">
 						<label>Participants</label>
