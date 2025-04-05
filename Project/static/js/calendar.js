@@ -752,7 +752,7 @@ function load_calendar() {
         };
 
         currentData = { ...originalData };
-        members = [...groupData.members];
+        members = originalData.members.map(member => ({ ...member }));
 
         isAdmin = groupData['authorization'];
         curr_email = groupData['curr_email'];
@@ -1056,7 +1056,7 @@ function load_calendar() {
         success: () => {
           showFlashMessage('success', 'Group updated successfully');
           originalData = { ...currentData };
-          originalData.members = [...members];
+          originalData.members = members.map(member => ({ ...member }));
           checkForChanges();
           refreshGroupList();
         },
