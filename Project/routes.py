@@ -436,7 +436,8 @@ def get_info(group_id):
             'name': group.group_name,
             'description': group.description,
             'members': members_list,
-            'authorization': authorization
+            'authorization': authorization,
+            'curr_email': current_user.email
         })
     
     elif request.method == 'DELETE':

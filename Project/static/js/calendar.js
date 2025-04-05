@@ -745,6 +745,7 @@ function edit_group_settings() {
   let groupId = document.getElementById('group-select').value;
   if (groupId == 1) return;
   let isAdmin = false;
+  var curr_email;
   $.ajax({
     url: `/group_info/${groupId}`,
     type: 'GET',
@@ -759,6 +760,7 @@ function edit_group_settings() {
       members = [...groupData.members];
 
       isAdmin = groupData['authorization'];
+      curr_email = groupData['curr_email'];
 
       createAndShowModal(isAdmin, groupId);
     },
@@ -791,7 +793,7 @@ function edit_group_settings() {
                           </div>
                           <div class="mb-3">
                               <label class="form-label text-body-secondary fw-bold">Description</label>
-                              <div id="groupDescContainer" class="editable-field" style="min-height: 100px;">
+                              <div id="groupDescContainer" class="editable-field" style="min-height: 38px;">
                                   <span id="groupDescDisplay" class="editable-text"></span>
                                   <textarea class="form-control d-none" id="editGroupDescription"></textarea>
                               </div>
@@ -976,8 +978,8 @@ function edit_group_settings() {
                       <span class="fw-bold">${member.email}</span>
                       <span class="badge bg-secondary ms-2">${member.role}</span>
                   </div>
-                  ${isAdmin ? `
-                  <button class="btn btn-sm btn-outline-danger remove-member" data-email="${member.email}">
+                  ${(isAdmin && member.email != curr_email) ? `
+                  <button class="btn btn-xs btn-outline-danger remove-member" data-email="${member.email}">
                       <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
                   </button>
                   ` : ''}
