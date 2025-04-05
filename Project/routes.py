@@ -216,7 +216,7 @@ def get_notifications():
         events1 = (
             db.session.query()
             .select_from(Member)
-            .filter(Member.read_status == 'Unread', Member.user_id == current_user.user_id, Member.permission != 'Admin')
+            .filter(Member.read_status == 'Unread', Member.user_id == current_user.user_id)
             .join(Group, Member.group_id == Group.group_id)
             .add_columns(Group.group_id,Group.group_name,Member.invite_time)
             .order_by(Member.invite_time.desc())
