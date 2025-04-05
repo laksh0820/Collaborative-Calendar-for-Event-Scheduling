@@ -170,15 +170,17 @@ function load_calendar() {
       }
       setupParticipantsSection(info, modal, group_permission);
     } else {
-      document.getElementById("participants-section").style.display = 'none';
-      document.getElementById("modal-view-add-participant-select").style.display = 'none';
-
-      if (info.event.extendedProps.event_permission === 'Viewer') {
+      if (info.event.extendedProps.event_type === 'group') {
+        document.getElementById("participants-section").style.display = 'block';
+        setupParticipantsSection(info, modal, 'Viewer');
+        document.getElementById("modal-view-add-participant-select").style.display = 'none';
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
         document.getElementById("modalCloseViewEvent").style.display = 'block';
       }
       else {
+        document.getElementById("participants-section").style.display = 'none';
+        document.getElementById("modal-view-add-participant-select").style.display = 'none';
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
         document.getElementById("modalCloseViewEvent").style.display = 'none';
@@ -252,7 +254,7 @@ function load_calendar() {
     const group_id = document.getElementById('group-select').value;
     const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
-    if (group_permission === 'Viewer' || (group_id == 1 && info.event.extendedProps.event_permission === 'Viewer')) {
+    if (group_permission === 'Viewer' || (group_id == 1 && info.event.extendedProps.event_type === 'group')) {
       document.getElementById('removeEvent').style.display = 'none';
       document.getElementById('saveViewEvent').style.display = 'none';
     } else {
@@ -947,7 +949,7 @@ function load_calendar() {
 
     function renderMembersList() {
       const $container = $('#editMembersList').empty();
-    
+
       members.forEach(member => {
         const $item = $(`
               <div class="list-group-item d-flex justify-content-between align-items-center">
@@ -973,17 +975,17 @@ function load_calendar() {
                   ` : ''}
               </div>
           `);
-    
+
         $container.append($item);
       });
-    
+
       // Add remove handler for new buttons
       $('.remove-member').click(function () {
         removeMember($(this).data('email'));
       });
-    
+
       // Add role change handler
-      $('[data-member-role]').click(function() {
+      $('[data-member-role]').click(function () {
         const newRole = $(this).data('member-role');
         const email = $(this).closest('.list-group-item').find('.fw-bold').text();
         const memberIndex = members.findIndex(m => m.email === email);

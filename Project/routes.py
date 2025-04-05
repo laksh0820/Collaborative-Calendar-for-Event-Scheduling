@@ -346,7 +346,7 @@ def return_data(group_id):
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
                 'end': event.end_time.isoformat(),
-                'event_permission': 'Admin'
+                'event_type': 'individual'
             })
             
         group_events = (
@@ -356,13 +356,63 @@ def return_data(group_id):
             .all()
         )
         for event in group_events:
-            permission = (
-                db.session.query(Member)
-                .select_from(Member)
-                .filter(Member.group_id == event.group_id, Member.user_id == current_user.user_id)
-                .add_columns(Member.permission)
+            users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id)
+                .add_columns(User.name,User.email)
                 .all()
             )
+            
+            accepted_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            pending_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            declined_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            # Get participants for this event
+            participants = [{
+                'name': participant.name,
+                'email': participant.email
+                # Add other participant fields as needed
+            } for participant in users]
+            
+            accepted_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in accepted_users]
+            
+            pending_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in pending_users]
+            
+            declined_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in declined_users]
             
             events_data.append({
                 'event_id': event.event_id,
@@ -370,7 +420,11 @@ def return_data(group_id):
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
                 'end': event.end_time.isoformat(),
-                'event_permission': f'{permission[0][1]}'
+                'event_type': 'group',
+                'participants': participants,
+                'accepted_participants': accepted_participants,
+                'pending_participants':pending_participants,
+                'declined_participants':declined_participants
             })
             
     else:
@@ -391,6 +445,33 @@ def return_data(group_id):
                 .all()
             )
             
+            accepted_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            pending_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
+            declined_users = (
+                db.session.query()
+                .select_from(User)
+                .join(Participate, User.user_id == Participate.user_id)
+                .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
+                .add_columns(User.name,User.email)
+                .all()
+            )
+            
             # Get participants for this event
             participants = [{
                 'name': participant.name,
@@ -398,13 +479,31 @@ def return_data(group_id):
                 # Add other participant fields as needed
             } for participant in users]
             
+            accepted_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in accepted_users]
+            
+            pending_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in pending_users]
+            
+            declined_participants = [{
+                'name': participant.name,
+                'email': participant.email
+            } for participant in declined_users]
+            
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
                 'end': event.end_time.isoformat(),
-                'participants': participants
+                'participants': participants,
+                'accepted_participants': accepted_participants,
+                'pending_participants':pending_participants,
+                'declined_participants':declined_participants
             })
     return jsonify(events_data)
 
