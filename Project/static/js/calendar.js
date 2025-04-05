@@ -843,7 +843,12 @@ function edit_group_settings() {
 
     // Populate initial data
     $('#groupNameDisplay').text(originalData.name);
-    $('#groupDescDisplay').text(originalData.description);
+    if (originalData.description) {
+      $('#groupDescDisplay').text(originalData.description);
+    }
+    else {
+      $('#groupDescDisplay').text("No Description");
+    }
     renderMembersList();
 
     // Show modal after data loads
