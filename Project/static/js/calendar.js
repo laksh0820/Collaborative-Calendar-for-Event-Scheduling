@@ -736,7 +736,7 @@ function load_calendar() {
 
         createAndShowModal(isAdmin, groupId);
       },
-      error: () => showFlash('Failed to fetch group data', 'error')
+      error: () => showFlashMessage('error', 'Failed to fetch group data')
     });
 
     // Create modal HTML
@@ -813,15 +813,15 @@ function load_calendar() {
       const modalEl = document.getElementById('modal-edit-group');
       const modal = new bootstrap.Modal(modalEl);
 
-    // Populate initial data
-    $('#groupNameDisplay').text(originalData.name);
-    if (originalData.description) {
-      $('#groupDescDisplay').text(originalData.description);
-    }
-    else {
-      $('#groupDescDisplay').text("No description");
-    }
-    renderMembersList();
+      // Populate initial data
+      $('#groupNameDisplay').text(originalData.name);
+      if (originalData.description) {
+        $('#groupDescDisplay').text(originalData.description);
+      }
+      else {
+        $('#groupDescDisplay').text("No description");
+      }
+      renderMembersList();
 
       // Show modal after data loads
       modal.show();
@@ -903,10 +903,10 @@ function load_calendar() {
               type: 'DELETE',
               success: () => {
                 modal.hide();
-                showFlash('Group deleted successfully', 'success');
+                showFlashMessage('success', 'Group deleted successfully');
                 refreshGroupList();
               },
-              error: () => showFlash('Failed to delete group', 'error')
+              error: () => showFlashMessage('error', 'Failed to delete group')
             });
           }
         });
@@ -994,13 +994,13 @@ function load_calendar() {
           members: members
         }),
         success: () => {
-          showFlash('Group updated successfully', 'success');
+          showFlashMessage('success', 'Group updated successfully');
           originalData = { ...currentData };
           originalData.members = [...members];
           checkForChanges();
           refreshGroupList();
         },
-        error: () => showFlash('Failed to update group', 'error')
+        error: () => showFlashMessage('error', 'Failed to update group')
       });
     }
 
