@@ -337,10 +337,18 @@ def return_data(group_id):
                 return "Unable to add group 1 to the database"
         
         # Get all the events from the database created by current user
-        events = []
+        events_data = []
         for event in current_user.created_events:
             if event.group_id == 1:
-                events.append(event)
+                events_data.append({
+                'event_id': event.event_id,
+                'title': event.event_name,
+                'description': event.description,
+                'start': event.start_time.isoformat(), 
+                'end': event.end_time.isoformat(),
+                'event_permission': 'Admin'
+            })
+            
         group_events = (
             db.session.query(Event)
             .join(Participate, Event.event_id == Participate.event_id)
@@ -348,17 +356,23 @@ def return_data(group_id):
             .all()
         )
         for event in group_events:
-            events.append(event)
-        
-        events_data = []
-        for event in events:
+            permission = (
+                db.session.query(Member)
+                .select_from(Member)
+                .filter(Member.group_id == event.group_id, Member.user_id == current_user.user_id)
+                .add_columns(Member.permission)
+                .all()
+            )
+            
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
-                'end': event.end_time.isoformat()
+                'end': event.end_time.isoformat(),
+                'event_permission': f'{permission[0][1]}'
             })
+            
     else:
         # Get all the events for the group
         group = Group.query.filter_by(group_id=group_id).first()
