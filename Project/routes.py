@@ -331,6 +331,12 @@ def get_info(group_id):
     
     elif request.method == 'DELETE':
         try:
+            events = Event.query.filter_by(group_id=group_id).all()
+            for event in events:
+                for participation in event.participations:
+                    db.session.delete(participation)
+                db.session.delete(event)
+                
             members = Member.query.filter_by(group_id=group_id).all()
             for member in members:
                 db.session.delete(member)
@@ -341,7 +347,27 @@ def get_info(group_id):
         return jsonify(success=True)
 
     else:
-        pass
+        group_info = request.get_json()
+        try:
+            group.group_name = group_info['name']
+            group.description = group_info['description']
+            members = Member.query.filter_by(group_id=group_id).all()
+            for member in members:
+                db.session.delete(member)
+            for mem in group_info['members']:
+                user = User.query.filter_by(email=mem.email.lower()).first()
+                if user is None:
+                    continue
+                newMember = Member(
+                    user_id = user.user_id,
+                    group_id = group.group_id,
+                    permission = mem.role
+                )
+                db.session.add(newMember)
+            db.session.commit()
+        except:
+            return "Unable to update group info"
+        return jsonify(success=True)
 
 # To add an event
 @app.route('/add_event',methods=['POST'])
