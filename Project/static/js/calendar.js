@@ -947,13 +947,24 @@ function load_calendar() {
 
     function renderMembersList() {
       const $container = $('#editMembersList').empty();
-
+    
       members.forEach(member => {
         const $item = $(`
               <div class="list-group-item d-flex justify-content-between align-items-center">
                   <div>
                       <span class="fw-bold">${member.email}</span>
-                      <span class="badge bg-secondary ms-2">${member.role}</span>
+                      ${(isAdmin && member.email != curr_email) ? `
+                      <div class="btn-group">
+                          <span class="badge bg-secondary ms-2 dropdown-toggle role-badge" data-bs-toggle="dropdown" style="cursor: pointer;">
+                            ${member.role}
+                          </span>
+                          <ul class="dropdown-menu">
+                              <li><a class="dropdown-item" data-member-role="Viewer">Viewer</a></li>
+                              <li><a class="dropdown-item" data-member-role="Editor">Editor</a></li>
+                              <li><a class="dropdown-item" data-member-role="Admin">Admin</a></li>
+                          </ul>
+                      </div>
+                      ` : `<span class="badge bg-secondary ms-2">${member.role}</span>`}
                   </div>
                   ${(isAdmin && member.email != curr_email) ? `
                   <button class="btn btn-xs btn-outline-danger remove-member" data-email="${member.email}">
@@ -962,13 +973,25 @@ function load_calendar() {
                   ` : ''}
               </div>
           `);
-
+    
         $container.append($item);
       });
-
+    
       // Add remove handler for new buttons
       $('.remove-member').click(function () {
         removeMember($(this).data('email'));
+      });
+    
+      // Add role change handler
+      $('[data-member-role]').click(function() {
+        const newRole = $(this).data('member-role');
+        const email = $(this).closest('.list-group-item').find('.fw-bold').text();
+        const memberIndex = members.findIndex(m => m.email === email);
+        if (memberIndex !== -1) {
+          members[memberIndex].role = newRole;
+          $(this).closest('.btn-group').find('.role-badge').text(newRole);
+          checkForChanges();
+        }
       });
     }
 
@@ -984,6 +1007,18 @@ function load_calendar() {
     function saveChanges(groupId) {
       if (!hasChanges) return;
 
+      const origEmails = new Set(originalData.members.map(m => m.email));
+      const currEmails = new Set(members.map(m => m.email));
+
+      const new_members = members.filter(m => !origEmails.has(m.email));
+      const deleted_members = originalData.members.filter(m => !currEmails.has(m.email));
+      const updated_members = originalData.members
+        .filter(o => members.some(c => c.email === o.email && c.role !== o.role))
+        .map(o => ({
+          email: o.email,
+          role: members.find(c => c.email === o.email).role
+        }));
+
       $.ajax({
         url: `/group_info/${groupId}`,
         type: 'PUT',
@@ -991,7 +1026,9 @@ function load_calendar() {
         data: JSON.stringify({
           name: currentData.name,
           description: currentData.description,
-          members: members
+          new_members: new_members,
+          deleted_members: deleted_members,
+          updated_members: updated_members
         }),
         success: () => {
           showFlashMessage('success', 'Group updated successfully');
