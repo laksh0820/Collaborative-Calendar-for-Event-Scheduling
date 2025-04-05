@@ -18,24 +18,21 @@
 
 <!-- Bootstrap Modal -->
 <div class="p-5">
-	<h2 class="mb-4">Calendar</h2>
-	<div class="card">
-		<div class="card-body p-0">
-			<div id="calendar-controls" style="margin-bottom: 10px; width: 50%; position: relative; left: 50%; transform: translateX(-50%); text-align: center;">
-				<select id="group-select" class="form-control mb-2">
+	<div class="calendar-container">
+		<header class="calendar-header">
+			<h1>CALENDAR</h1>
+			<div class="search-bar">
+				<select id="group-select">
 					<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>
 					{% for group in groups %}
 					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}"
 						data-permission="{{ group.permission }}">{{ group.group_name }}</option>
 					{% endfor %}
 				</select>
-				<a id="group-settings">
-					<i class="bx bx-cog"></i>
-					Group Settings
-				</a>
+				<a id="group-settings"><i class="bx bx-cog" class="settings-icon"></i>Group Settings</a>
 			</div>
-			<div id="calendar"></div>
-		</div>
+		</header>
+		<div id="calendar"></div>
 	</div>
 </div>
 
@@ -77,12 +74,63 @@
 			<div class="modal-footer">
 				<button type="submit" class="btn btn-primary" id="saveViewEvent">Save Changes</button>
 				<button type="submit" class="btn btn-primary" id="removeEvent">Remove Event</button>
-				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="modalCloseViewEvent">Close</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+					id="modalCloseViewEvent">Close</button>
 			</div>
 		</div>
 	</div>
 </div>
 <style>
+	.calendar-container {
+		background: white;
+		border-radius: 1rem;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		max-width: 1000px;
+		margin: 0 auto;
+		padding: 2rem;
+	}
+
+	.calendar-header {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin-bottom: 2rem;
+	}
+
+	.calendar-header h1 {
+		color: var(#1a365d);
+		font-size: 1.5rem;
+		font-weight: 600;
+	}
+
+	.search-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	#group-select {
+		flex: 1;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(#e2e8f0);
+		border-radius: 0.5rem;
+		font-size: 1rem;
+	}
+
+	#group-settings {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(#2d3748);
+		cursor: pointer;
+		font-size: 1.1rem;
+	}
+
+	.settings-icon {
+		font-size: 1.2rem;
+	}
+
 	#closeViewEvent {
 		font-size: 1.5rem;
 		color: #6b7280;
