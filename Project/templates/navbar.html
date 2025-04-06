@@ -2,8 +2,12 @@
 <div class="navbar">
     <div class="navbar-brand">Event Management System</div>
     <ul class="navbar-nav">
-        <li><a href="{{ url_for('base') }}">Home</a></li>
         {% if current_user.is_authenticated %}
+        <li>
+            <a href="https://meet.google.com" target="_blank" rel="noopener noreferrer" title="Google Meet">
+                <i class="bx bxs-video" style="font-size: x-large;"></i>
+            </a>
+        </li>
         <li class="Notification">
             <a role="button" data-bs-toggle="popover" data-bs-container="body" data-bs-trigger="focus"
                 data-bs-placement="bottom" id="notificationBtn">
@@ -24,6 +28,7 @@
         </li>
         <li><a href="{{ url_for('signout') }}">SignOut</a></li>
         {% else %}
+        <li><a href="{{ url_for('base') }}">Home</a></li>
         <li><a href="{{ url_for('signup') }}">SignUp</a></li>
         <li><a href="{{ url_for('signin') }}">SignIn</a></li>
         {% endif %}
