@@ -537,6 +537,7 @@ function load_calendar() {
     }
 
     if (isValid) {
+      document.getElementById('add-event').reset();
       $('#modal-view-event-add').modal('hide');
 
       $.ajax({

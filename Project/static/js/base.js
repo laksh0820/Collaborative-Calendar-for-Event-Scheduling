@@ -61,7 +61,7 @@ searchBtn.addEventListener('click', () => {
     sidebar.classList.toggle('active');
 });
 
-createGrp.addEventListener('click', create_group);
+if (createGrp) createGrp.addEventListener('click', create_group);
 
 // Create group modal functionality
 function create_group() {
@@ -81,17 +81,25 @@ function create_group() {
                     </div>
                     <div class="modal-body">
                         <form id="createGroupForm">
+                            <style>
+                                .form-label {
+                                font-weight: 600;
+                                letter-spacing: 0.010em;
+                                font-size: 18px;
+                                margin-bottom: 2px;
+                                }
+                            </style>
                             <div class="mb-3">
-                                <label for="groupName" class="form-label text-body-secondary fw-bold">Group Name</label>
+                                <label for="groupName" class="form-label">Group Name</label>
                                 <input type="text" class="form-control" id="groupName" required>
                                 <div class="invalid-feedback"></div>
                             </div>
                             <div class="mb-3">
-                                <label for="groupDescription" class="form-label text-body-secondary fw-bold">Description</label>
+                                <label for="groupDescription" class="form-label">Description</label>
                                 <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label text-body-secondary fw-bold">Members</label>
+                                <label class="form-label">Members</label>
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
                                     <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">

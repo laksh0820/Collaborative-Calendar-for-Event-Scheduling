@@ -321,7 +321,7 @@
 		<div class="modal-content">
 			<form id="add-event">
 				<div class="modal-header" style="justify-content: space-between;">
-					<h4 class="modal-title">Add Event Detail</h4>
+					<h4 class="modal-title">Create New Event</h4>
 					<button type="button" data-bs-dismiss="modal" id="closeAddEvent">×</button>
 				</div>
 				<div class="modal-body">
@@ -363,8 +363,8 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="submit" class="btn btn-primary" id="saveEvent">Save</button>
-					<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="(() => { document.getElementById('add-event').reset() })()">Cancel</button>
+					<button type="submit" class="btn btn-primary" id="saveEvent">Create Event</button>
 				</div>
 			</form>
 		</div>
