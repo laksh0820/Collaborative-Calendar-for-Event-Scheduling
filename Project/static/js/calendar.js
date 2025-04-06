@@ -68,7 +68,7 @@ function showFlashMessage(type, message) {
   // Display the flash message
   const flashHTML = `
     <div class="alert alert-dismissible fade show" role="alert"
-        style="background-color:white; color:black; padding:10px; margin-right:5px;" id="flash-message">
+        style="background-color:white; color:black; padding:10px; margin-right:5px; z-index: 2000;" id="flash-message">
         ${icon} ${message}
     </div>`;
   document.body.insertAdjacentHTML('beforeend', flashHTML);
@@ -82,7 +82,7 @@ function showFlashMessage(type, message) {
   calendarResources.timeouts.push(timeoutId);
 }
 
-// Function to load the calendat
+// Function to load the calendar
 function load_calendar() {
   const calendarEl = document.getElementById('calendar');
   const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -1100,12 +1100,19 @@ function load_calendar() {
           description: groupData['description'],
           members: groupData['members']
         };
+        curr_email = groupData['curr_email'];
+        isAdmin = groupData['authorization'];
+        originalData.members = originalData.members.sort((a, b) => {
+          // If current user is admin, put them first
+          if (isAdmin && a.email === curr_email) return -1;
+          if (isAdmin && b.email === curr_email) return 1;
+          // Sort by role priority
+          const roleOrder = { Admin: 1, Editor: 2, Viewer: 3 };
+          return roleOrder[a.role] - roleOrder[b.role];
+        });
 
         currentData = { ...originalData };
         members = originalData.members.map(member => ({ ...member }));
-
-        isAdmin = groupData['authorization'];
-        curr_email = groupData['curr_email'];
 
         createAndShowModal(isAdmin, groupId);
       },
@@ -1340,7 +1347,7 @@ function load_calendar() {
                       ` : `<span class="badge bg-secondary ms-2">${member.role}</span>`}
                   </div>
                   ${(isAdmin && member.email != curr_email) ? `
-                  <button class="btn btn-xs btn-outline-danger remove-member" data-email="${member.email}">
+                  <button class="btn btn-xs btn-outline-danger remove-member" style="line-height: 0.8" data-email="${member.email}">
                       <i class="bx bx-x" style="font-size:1.5rem; font-weight:bold;"></i>
                   </button>
                   ` : ''}

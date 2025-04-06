@@ -282,7 +282,7 @@ function create_group() {
                 // Display the success flash message
                 const flashHTML = `
                 <div class="alert alert-dismissible fade show" role="alert"
-                    style="background-color:white; color:black; padding:10px; margin-right:5px;" id="group-sub-success">
+                    style="background-color:white; color:black; padding:10px; margin-right:5px; z-index: 2000;" id="group-sub-success">
                     <i class="bx bx-check-circle" style="color:lawngreen;"></i>
                     Successfully Created Group
                 </div>`;
