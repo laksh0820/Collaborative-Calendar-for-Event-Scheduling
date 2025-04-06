@@ -1284,7 +1284,7 @@ function load_calendar() {
               success: () => {
                 modal.hide();
                 showFlashMessage('success', 'Group deleted successfully');
-                refreshGroupList();
+                refreshGroupList(1);
               },
               error: () => showFlashMessage('error', 'Failed to delete group')
             });
@@ -1415,7 +1415,7 @@ function load_calendar() {
           originalData = { ...currentData };
           originalData.members = members.map(member => ({ ...member }));
           checkForChanges();
-          refreshGroupList();
+          refreshGroupList(groupId);
         },
         error: () => showFlashMessage('error', 'Failed to update group')
       });
@@ -1426,7 +1426,7 @@ function load_calendar() {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function refreshGroupList() {
+    function refreshGroupList(groupId) {
       $.ajax({
         url: '/get_groups',
         type: 'GET',
@@ -1443,6 +1443,7 @@ function load_calendar() {
                 .attr('data-permission', group.permission)
             );
           });
+          select.val(groupId);
 
           calendar.removeAllEvents();
           calendar.refetchEvents();
