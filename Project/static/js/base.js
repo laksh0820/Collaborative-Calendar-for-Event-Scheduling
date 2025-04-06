@@ -385,7 +385,6 @@ function get_notifications() {
 
                     const notification_id = notification.getAttribute('data-id');
                     const notification_type = notification.getAttribute('data-type');
-                    console.log(notification_id, notification_type);
 
                     // Send a request to mark the notification as read
                     $.ajax({
