@@ -86,7 +86,7 @@ function showFlashMessage(type, message) {
 function load_calendar() {
   const calendarEl = document.getElementById('calendar');
   const calendar = new FullCalendar.Calendar(calendarEl, {
-    timeZone: 'local',
+    timeZone: 'UTC',
     themeSystem: 'bootstrap5',
     headerToolbar: {
       left: 'prev,next today',
@@ -992,6 +992,8 @@ function load_calendar() {
                     .attr('data-permission', group.permission)
                 );
               });
+
+              fetch_unread_notifications_count();   // Refresh the notification count
             },
             error: function () {
               $('#group-select').html('<option value="" disabled>Error loading groups</option>');
@@ -1494,4 +1496,34 @@ $(document).ready(function () {
     });
   }
 });
+
+// Fetch unread notifications count
+function fetch_unread_notifications_count() {
+  const notificationBadge = document.getElementById('notificationBadge');
+  // Check if the notification badge exists before trying to access it
+  if (notificationBadge === null) return;
+
+  $.ajax({
+      url: '/get_notifications',
+      type: 'GET',
+      success: function (response) {
+          const unreadCount = response.length;
+          notificationBadge.textContent = unreadCount;
+          if (unreadCount > 0) {
+              // Show the badge if there are unread notifications
+              if (notificationBadge.classList.contains('d-none')) {
+                  notificationBadge.classList.remove('d-none');
+              }
+          } else {
+              // Hide the badge if there are no unread notifications
+              if (!notificationBadge.classList.contains('d-none')) {
+                  notificationBadge.classList.add('d-none');
+              }
+          }
+      },
+      error: function () {
+          console.error('Error fetching notifications count');
+      }
+  });
+}
 

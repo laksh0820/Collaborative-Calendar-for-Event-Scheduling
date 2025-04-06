@@ -42,7 +42,10 @@ def human_readable_delta(dt):
     return "Just Now"
 
 @app.route('/')
-def base():        
+def base():
+    if (current_user.is_authenticated):
+        return redirect(url_for('get_calendar'))
+
     return render_template("base.html")
 
 # To signin an existing user
@@ -231,7 +234,7 @@ def get_notifications():
             db.session.query()
             .select_from(Participate)
             .join(Event, Participate.event_id == Event.event_id)
-            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id, Event.creator != current_user.get_id())
+            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id, Event.creator != current_user.user_id)
             .add_columns(Participate.event_id,Event.event_name,Participate.invite_time)
             .order_by(Participate.invite_time.desc())
             .all()
@@ -267,9 +270,9 @@ def get_notifications():
         # Mark the notification as read
         try:
             if response['type'] == 'group':
-                notification = Member.query.filter_by(group_id=response['id'], user_id=current_user.get_id()).first()
+                notification = Member.query.filter_by(group_id=response['id'], user_id=current_user.user_id).first()
             else:
-                notification = Participate.query.filter_by(event_id=response['id'], user_id=current_user.get_id()).first()
+                notification = Participate.query.filter_by(event_id=response['id'], user_id=current_user.user_id).first()
             notification.read_status = 'Read'
             db.session.commit()
             return jsonify(success=True)
@@ -342,13 +345,21 @@ def return_data(group_id):
         # Get all the events from the database created by current user
         events_data = []
         for event in current_user.created_events:
+            local_start_time = event.start_time.astimezone()
+            local_end_time = event.end_time.astimezone()
+            if event.start_time.tzinfo is None:
+                local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                local_start_time = local_start_time.astimezone()
+            if event.end_time.tzinfo is None:
+                local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                local_end_time = local_end_time.astimezone()
             if event.group_id == 1:
                 events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
-                'start': event.start_time.isoformat(), 
-                'end': event.end_time.isoformat(),
+                'start': local_start_time.isoformat(), 
+                'end': local_end_time.isoformat(),
                 'event_type': 'individual',
                 'is_pending_for_current_user': False
             })
@@ -422,12 +433,22 @@ def return_data(group_id):
                 participant['email'] == current_user.email 
                 for participant in pending_participants
             )
+
+            local_start_time = event.start_time.astimezone()
+            local_end_time = event.end_time.astimezone()
+            if event.start_time.tzinfo is None:
+                local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                local_start_time = local_start_time.astimezone()
+            if event.end_time.tzinfo is None:
+                local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                local_end_time = local_end_time.astimezone()
+
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
-                'start': event.start_time.isoformat(), 
-                'end': event.end_time.isoformat(),
+                'start': local_start_time.isoformat(), 
+                'end': local_end_time.isoformat(),
                 'event_type': 'group',
                 'participants': participants,
                 'accepted_participants': accepted_participants,
@@ -507,12 +528,22 @@ def return_data(group_id):
                 participant['email'] == current_user.email 
                 for participant in pending_participants
             )
+
+            local_start_time = event.start_time.astimezone()
+            local_end_time = event.end_time.astimezone()
+            if event.start_time.tzinfo is None:
+                local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                local_start_time = local_start_time.astimezone()
+            if event.end_time.tzinfo is None:
+                local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                local_end_time = local_end_time.astimezone()
+
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
                 'description': event.description,
-                'start': event.start_time.isoformat(), 
-                'end': event.end_time.isoformat(),
+                'start': local_start_time.isoformat(), 
+                'end': local_end_time.isoformat(),
                 'participants': participants,
                 'accepted_participants': accepted_participants,
                 'pending_participants': pending_participants,

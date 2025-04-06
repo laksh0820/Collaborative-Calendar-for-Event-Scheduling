@@ -8,31 +8,7 @@ const notificationBadge = document.getElementById('notificationBadge');
 
 // Fetch number of unread notifications on page load
 document.addEventListener('DOMContentLoaded', function () {
-    // Check if the notification badge exists before trying to access it
-    if (notificationBadge === null) return;
-
-    $.ajax({
-        url: '/get_notifications',
-        type: 'GET',
-        success: function (response) {
-            const unreadCount = response.length;
-            notificationBadge.textContent = unreadCount;
-            if (unreadCount > 0) {
-                // Show the badge if there are unread notifications
-                if (notificationBadge.classList.contains('d-none')) {
-                    notificationBadge.classList.remove('d-none');
-                }
-            } else {
-                // Hide the badge if there are no unread notifications
-                if (!notificationBadge.classList.contains('d-none')) {
-                    notificationBadge.classList.add('d-none');
-                }
-            }
-        },
-        error: function () {
-            console.error('Error fetching notifications count');
-        }
-    });
+    fetch_unread_notifications_count();
 });
 
 // Toggle notification popover
@@ -319,6 +295,35 @@ function create_group() {
         permissions.length = 0;
         renderMembersList();
     }
+}
+
+// Fetch unread notifications count
+function fetch_unread_notifications_count() {
+    // Check if the notification badge exists before trying to access it
+    if (notificationBadge === null) return;
+
+    $.ajax({
+        url: '/get_notifications',
+        type: 'GET',
+        success: function (response) {
+            const unreadCount = response.length;
+            notificationBadge.textContent = unreadCount;
+            if (unreadCount > 0) {
+                // Show the badge if there are unread notifications
+                if (notificationBadge.classList.contains('d-none')) {
+                    notificationBadge.classList.remove('d-none');
+                }
+            } else {
+                // Hide the badge if there are no unread notifications
+                if (!notificationBadge.classList.contains('d-none')) {
+                    notificationBadge.classList.add('d-none');
+                }
+            }
+        },
+        error: function () {
+            console.error('Error fetching notifications count');
+        }
+    });
 }
 
 // Function to get notifications

@@ -29,8 +29,8 @@ class User(db.Model, UserMixin):
 
 class Event(db.Model):
     event_id = db.Column(db.Integer, primary_key=True)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.DateTime(timezone=True), nullable=False)
+    end_time = db.Column(db.DateTime(timezone=True), nullable=False)
     event_name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(1000))
     version_number = db.Column(db.Integer, nullable=False)
