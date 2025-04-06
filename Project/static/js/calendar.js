@@ -74,15 +74,10 @@ function showFlashMessage(type, message) {
   document.body.insertAdjacentHTML('beforeend', flashHTML);
 
   // Add Timeout to flash messages
-  const flashElements = document.querySelectorAll('#flash-message');
+  const flashElement = document.getElementById('flash-message');
   const timeoutId = setTimeout(() => {
-    // Do this for each flash element
-    flashElements.forEach(el => {
-      el.style.opacity = '0';
-      setTimeout(function () {
-        el.remove();
-      }, 2000);
-    });
+    flashElement.style.opacity = '0';
+    setTimeout(() => flashElement.remove(), 2000);
   }, 1000);
   calendarResources.timeouts.push(timeoutId);
 }
@@ -1012,6 +1007,8 @@ function load_calendar() {
                     .attr('data-permission', group.permission)
                 );
               });
+
+              fetch_unread_notifications_count();   // Refresh the notification count
             },
             error: function () {
               $('#group-select').html('<option value="" disabled>Error loading groups</option>');
@@ -1036,8 +1033,6 @@ function load_calendar() {
             }
           });
 
-          fetch_unread_notifications_count();   // Refresh the notification count
-
           // Show success message
           const message = status === 'Accepted'
             ? 'Invitation accepted successfully'
@@ -1053,15 +1048,12 @@ function load_calendar() {
 
           // Auto-remove after 3 seconds
           setTimeout(function () {
-            const flashElements = document.querySelectorAll('#invite-response-success');
-            if (flashElements) {
-              // Do this for each flash element
-              flashElements.forEach(el => {
-                el.style.opacity = '0';
-                setTimeout(function () {
-                  el.remove();
-                }, 2000);
-              });
+            const flashElement = document.getElementById('invite-response-success');
+            if (flashElement) {
+              flashElement.style.opacity = '0';
+              setTimeout(function () {
+                flashElement.remove();
+              }, 2000);
             }
           }, 1000);
         },
@@ -1929,14 +1921,11 @@ function create_group() {
 
                 // Auto-remove after  seconds
                 setTimeout(function () {
-                    const flashElements = document.querySelectorAll('#group-sub-success');
-                    // Do this for each flash element
-                    flashElements.forEach(el => {
-                      el.style.opacity = '0';
-                      setTimeout(function () {
-                        el.remove();
-                      }, 2000);
-                    });
+                    const flashElement = document.getElementById('group-sub-success');
+                    flashElement.style.opacity = '0';
+                    setTimeout(function () {
+                        flashElement.remove();
+                    }, 2000);
                 }, 1000);
             },
             error: function (response) {
