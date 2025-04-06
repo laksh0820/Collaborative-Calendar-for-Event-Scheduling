@@ -349,7 +349,8 @@ def return_data(group_id):
                 'description': event.description,
                 'start': event.start_time.isoformat(), 
                 'end': event.end_time.isoformat(),
-                'event_type': 'individual'
+                'event_type': 'individual',
+                'is_pending_for_current_user': False
             })
             
         group_events = (
@@ -417,6 +418,10 @@ def return_data(group_id):
                 'email': participant.email
             } for participant in declined_users]
             
+            is_pending = any(
+                participant['email'] == current_user.email 
+                for participant in pending_participants
+            )
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
@@ -427,7 +432,8 @@ def return_data(group_id):
                 'participants': participants,
                 'accepted_participants': accepted_participants,
                 'pending_participants':pending_participants,
-                'declined_participants':declined_participants
+                'declined_participants':declined_participants,
+                'is_pending_for_current_user': is_pending
             })
             
     else:
@@ -497,6 +503,10 @@ def return_data(group_id):
                 'email': participant.email
             } for participant in declined_users]
             
+            is_pending = any(
+                participant['email'] == current_user.email 
+                for participant in pending_participants
+            )
             events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
@@ -505,8 +515,9 @@ def return_data(group_id):
                 'end': event.end_time.isoformat(),
                 'participants': participants,
                 'accepted_participants': accepted_participants,
-                'pending_participants':pending_participants,
-                'declined_participants':declined_participants
+                'pending_participants': pending_participants,
+                'declined_participants': declined_participants,
+                'is_pending_for_current_user': is_pending
             })
     return jsonify(events_data)
 

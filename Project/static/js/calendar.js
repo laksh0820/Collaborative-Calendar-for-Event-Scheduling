@@ -111,6 +111,10 @@ function load_calendar() {
         });
         calendarResources.tooltips.push(tooltip);
       }
+      
+      if (info.event.extendedProps.is_pending_for_current_user) {
+        info.el.style.opacity = '0.6';
+      }
     },
     events: function (fetchInfo, successCallback, failureCallback) {
       const group_id = document.getElementById('group-select').value;
