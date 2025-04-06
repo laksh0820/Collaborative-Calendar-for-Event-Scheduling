@@ -16,6 +16,10 @@ body {
   color: red;
 }
 
+.tooltip.bs-tooltip-auto.fade.show {
+  z-index: 9999999 !important;
+}
+
 /*!
  * FullCalendar v3.9.0
  * Docs & License: https://fullcalendar.io/
