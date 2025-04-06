@@ -1,8 +1,6 @@
 // Global object to track modal resources
 const calendarResources = {
   modalListeners: [],
-  timeouts: [],
-  intervals: [],
   tooltips: []
 };
 
@@ -43,12 +41,6 @@ function cleanupResources() {
   });
   calendarResources.modalListeners = [];
 
-  // Clear all timeouts and intervals
-  calendarResources.timeouts.forEach(timeout => clearTimeout(timeout));
-  calendarResources.timeouts = [];
-  calendarResources.intervals.forEach(interval => clearInterval(interval));
-  calendarResources.intervals = [];
-
   // Destroy all tooltips
   calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
   calendarResources.tooltips = [];
@@ -74,12 +66,15 @@ function showFlashMessage(type, message) {
   document.body.insertAdjacentHTML('beforeend', flashHTML);
 
   // Add Timeout to flash messages
-  const flashElement = document.getElementById('flash-message');
-  const timeoutId = setTimeout(() => {
-    flashElement.style.opacity = '0';
-    setTimeout(() => flashElement.remove(), 2000);
+  const flashElements = document.querySelectorAll('#flash-message');
+  setTimeout(() => {
+    if (flashElements) {
+      flashElements.forEach(flashElement => {
+        flashElement.style.opacity = '0';
+        setTimeout(() => flashElement.remove(), 2000);
+      });
+    }
   }, 1000);
-  calendarResources.timeouts.push(timeoutId);
 }
 
 // Function to load the calendar
@@ -1048,12 +1043,12 @@ function load_calendar() {
 
           // Auto-remove after 3 seconds
           setTimeout(function () {
-            const flashElement = document.getElementById('invite-response-success');
-            if (flashElement) {
-              flashElement.style.opacity = '0';
-              setTimeout(function () {
-                flashElement.remove();
-              }, 2000);
+            const flashElements = document.querySelectorAll('#invite-response-success');
+            if (flashElements) {
+              flashElements.forEach(flashElement => {
+                flashElement.style.opacity = '0';
+                setTimeout(() => flashElement.remove(), 2000);
+              });
             }
           }, 1000);
         },
@@ -1921,11 +1916,13 @@ function create_group() {
 
                 // Auto-remove after  seconds
                 setTimeout(function () {
-                    const flashElement = document.getElementById('group-sub-success');
-                    flashElement.style.opacity = '0';
-                    setTimeout(function () {
-                        flashElement.remove();
-                    }, 2000);
+                    const flashElements = document.querySelectorAll('#group-sub-success');
+                    if (flashElements) {
+                        flashElements.forEach(flashElement1 => {
+                            flashElement1.style.opacity = '0';
+                            setTimeout(() => flashElement1.remove(), 1000);
+                        });
+                    }
                 }, 1000);
             },
             error: function (response) {
