@@ -1718,53 +1718,61 @@ function create_group() {
 
     // Create modal HTML if it doesn't exist
     if (!document.getElementById('modal-create-group')) {
-        const modalHTML = `
-        <div class="modal fade" id="modal-create-group" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="createGroupModalLabel">Create New Group</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="createGroupForm">
-                            <div class="mb-3">
-                                <label for="groupName" class="form-label text-body-secondary fw-bold">Group Name</label>
-                                <input type="text" class="form-control" id="groupName" required>
-                                <div class="invalid-feedback"></div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="groupDescription" class="form-label text-body-secondary fw-bold">Description</label>
-                                <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label text-body-secondary fw-bold">Members</label>
-                                <div class="input-group mb-2">
-                                    <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
-                                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Editor
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="roleDropdown">
-                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Viewer';">Viewer</a></li>
-                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
-                                    <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
-                                    </ul>
-                                    <button class="btn btn-primary" type="button" id="addMemberBtn">
-                                        Add<i class="bi bi-plus-lg"></i>
-                                    </button>
-                                </div>
-                                <div id="member-invalid-feedback" class="invalid-feedback"></div>
-                                <div id="membersList" class="d-flex flex-wrap gap-2"></div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" id="cancelGroupBtn" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="submitGroupBtn">Create Group</button>
-                    </div>
-                </div>
-            </div>
-        </div>`;
+      const modalHTML = `
+      <div class="modal fade" id="modal-create-group" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title" id="createGroupModalLabel">Create New Group</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <form id="createGroupForm">
+                          <style>
+                              .form-label {
+                              font-weight: 600;
+                              letter-spacing: 0.010em;
+                              font-size: 18px;
+                              margin-bottom: 2px;
+                              }
+                          </style>
+                          <div class="mb-3">
+                              <label for="groupName" class="form-label">Group Name</label>
+                              <input type="text" class="form-control" id="groupName" required>
+                              <div class="invalid-feedback"></div>
+                          </div>
+                          <div class="mb-3">
+                              <label for="groupDescription" class="form-label">Description</label>
+                              <textarea class="form-control" id="groupDescription" rows="6" style="min-height: 100px; resize: vertical;"></textarea>
+                          </div>
+                          <div class="mb-3">
+                              <label class="form-label">Members</label>
+                              <div class="input-group mb-2">
+                                  <input type="text" class="form-control" id="memberInput" placeholder="Enter email">
+                                  <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="roleDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                  Editor
+                                  </button>
+                                  <ul class="dropdown-menu" aria-labelledby="roleDropdown">
+                                  <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Viewer';">Viewer</a></li>
+                                  <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Editor';">Editor</a></li>
+                                  <li><a class="dropdown-item" onclick="document.getElementById('roleDropdown').textContent = 'Admin';">Admin</a></li>
+                                  </ul>
+                                  <button class="btn btn-primary" type="button" id="addMemberBtn">
+                                      Add<i class="bi bi-plus-lg"></i>
+                                  </button>
+                              </div>
+                              <div id="member-invalid-feedback" class="invalid-feedback"></div>
+                              <div id="membersList" class="d-flex flex-wrap gap-2"></div>
+                          </div>
+                      </form>
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" id="cancelGroupBtn" data-bs-dismiss="modal">Cancel</button>
+                      <button type="button" class="btn btn-primary" id="submitGroupBtn">Create Group</button>
+                  </div>
+              </div>
+          </div>
+      </div>`;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
 
         // Add member functionality
