@@ -1004,6 +1004,10 @@ function load_calendar() {
                 );
               });
 
+              calendar.removeAllEvents();
+              cleanupResources();
+              calendar.refetchEvents();
+
               fetch_unread_notifications_count();   // Refresh the notification count
             },
             error: function () {
