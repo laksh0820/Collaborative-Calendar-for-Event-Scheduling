@@ -724,11 +724,10 @@ def add_event():
             participant = Participate()
             participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
             participant.event_id = newEvent.event_id
-            db.session.add(participant)
-            
             if participantEmail == current_user.email:
                 participant.read_status = 'Read'
                 participant.status = 'Accepted'
+            db.session.add(participant)
             
         try:
             db.session.commit()
@@ -762,41 +761,6 @@ def remove_event(event_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/update_participate/<int:event_id>/<email>', methods=['PUT'])
-@login_required
-def update_participate(event_id,email):
-    user = User.query.filter_by(email=email).first()
-    participant = Participate()
-    participant.user_id = user.user_id
-    participant.event_id = event_id
-    participant.status = 'Pending'
-    
-    try:
-        db.session.add(participant)
-        db.session.commit()
-        return jsonify({'name': f'{user.name}','email':f'{user.email}'}), 200
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-    
-@app.route('/remove_participate/<int:event_id>/<email>', methods=['DELETE'])
-@login_required
-def remove_participate(event_id,email):
-    user = User.query.filter_by(email=email).first()
-    participant = Participate.query.filter_by(user_id=user.user_id,event_id=event_id).first()
-    
-    if participant:
-        try:
-            db.session.delete(participant)
-            db.session.commit()
-            return jsonify(success=True)
-        
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify(success=True)
 
 @app.route('/update_event/<int:event_id>', methods=['PUT'])
 @login_required
@@ -806,6 +770,50 @@ def update_event(event_id):
     event = Event.query.filter_by(event_id=event_id).first()
     event.event_name = new_event['title']
     event.description = new_event['description']
+    
+    accepted_participants = []
+    declined_participants = []
+    pending_participants = []
+    
+    for participant in event.participations:
+        if participant.status == 'Accepted':
+            accepted_participants.append(participant)
+        elif participant.status == 'Declined':
+            declined_participants.append(participant)
+        else:
+            pending_participants.append(participant)
+    
+    new_accepted_participants_email = []
+    for element in new_event['accepted_participants']:
+        new_accepted_participants_email.append(element['email'])
+    new_declined_participants_email = []
+    for element in new_event['declined_participants']:
+        new_declined_participants_email.append(element['email'])
+    new_pending_participants_email = []
+    for element in new_event['pending_participants']:
+        new_pending_participants_email.append(element['email'])
+            
+    # Update Accpeted participants for the event
+    for participant in accepted_participants:
+        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+        if participant_email not in new_accepted_participants_email:
+            db.session.delete(participant)
+            
+    # Update Declined participants for the event
+    for participant in declined_participants:
+        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+        if participant_email not in new_declined_participants_email:
+            db.session.delete(participant)
+    
+    # Update Pending participants for the event
+    for participant in pending_participants: 
+        db.session.delete(participant)
+    
+    for participant_email in new_pending_participants_email:
+        participant = Participate()
+        participant.user_id = User.query.filter_by(email=participant_email.lower()).first().user_id
+        participant.event_id = event_id
+        db.session.add(participant)
     
     try:
         db.session.commit() 
