@@ -25,7 +25,8 @@
 				<select id="group-select">
 					<option id="group-select-option-1" value="1">Dashboard</option>
 					{% for group in groups %}
-					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}">{{ group.group_name }}</option>
+					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}">{{
+						group.group_name }}</option>
 					{% endfor %}
 				</select>
 				<a id="group-settings"><i class="bx bx-cog" class="settings-icon"></i>Group Settings</a>
@@ -46,16 +47,19 @@
 			<div class="modal-header" style="justify-content: space-between;">
 				<h4 class="modal-title" style="max-width: 95%;">
 					<span class="event-icon"></span>
-					<span class="event-title" style="max-width: 95%; overflow-wrap: break-word;" id="model-view-title-editable" contenteditable="true"></span>
+					<span class="event-title" style="max-width: 95%; overflow-wrap: break-word;"
+						id="model-view-title-editable" contenteditable="true"></span>
 				</h4>
 				<button type="button" data-bs-dismiss="modal" id="closeViewEvent">×</button>
 			</div>
 			<div class="modal-body">
 				<div class="description" style="display: flex; margin-bottom: 1.5rem;">
 					<span className="icon">📅</span>
-					<div class="event-body" style="margin-left: 5px; max-width: 95%; min-width: 95%; overflow-wrap: break-word;"
-					id="model-view-description-editable" onfocus="this.textContent === 'No description available' && (this.textContent = '')"
-					onblur="!this.textContent.trim() && (this.textContent = 'No description available')" contenteditable="true"></div>
+					<div class="event-body" id="model-view-description-editable" contenteditable="true"
+						style="margin-left: 5px; max-width: 95%; min-width: 95%; overflow-wrap: break-word; white-space: pre-wrap;"
+						onkeydown="if(event.key === 'Enter') { document.execCommand('insertHTML', false, '<br>'); event.preventDefault(); }"
+						onfocus="this.textContent === 'No description available' && (this.textContent = '')"
+						onblur="!this.textContent.trim() && (this.textContent = 'No description available')"></div>
 				</div>
 				<!-- Participants Section -->
 				<div id="participants-section" class="mt-2">
@@ -362,7 +366,8 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="(() => { document.getElementById('add-event').reset() })()">Cancel</button>
+					<button type="button" class="btn btn-primary" data-bs-dismiss="modal"
+						onclick="(() => { document.getElementById('add-event').reset() })()">Cancel</button>
 					<button type="submit" class="btn btn-primary" id="saveEvent">Create Event</button>
 				</div>
 			</form>

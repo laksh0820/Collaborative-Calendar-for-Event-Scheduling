@@ -414,7 +414,7 @@ function load_calendar() {
     const eventTitle = $('#model-view-title-editable').text().trim();
     // const eventStart = $('#eventStart').val().trim();
     // const eventEnd = $('#eventEnd').val().trim();
-    const description = $('#model-view-description-editable').text().trim();
+    const description = document.getElementById("model-view-description-editable").innerText.trim();
 
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid-feedback').hide();
