@@ -991,7 +991,7 @@ function load_calendar() {
             type: 'GET',
             success: function (data) {
               const select = $('#group-select');
-              select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+              select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
               $.each(data, function (index, group) {
                 select.append(
@@ -999,7 +999,6 @@ function load_calendar() {
                     .attr('id', 'group-select-option-' + group.group_id)
                     .val(group.group_id)
                     .text(group.name)
-                    .attr('data-permission', group.permission)
                 );
               });
 
@@ -1184,7 +1183,7 @@ function load_calendar() {
                                       Add<i class="bi bi-plus-lg"></i>
                                   </button>
                               </div>
-                               <div id="editmember-invalid-feedback" class="invalid-feedback"></div>
+                               <div id="editmember-invalid-feedback" class="invalid-feedback mb-2"></div>
                               ` : ''}
                               <div id="editMembersList" class="list-group"></div>
                           </div>
@@ -1427,11 +1426,26 @@ function load_calendar() {
           deleted_members: deleted_members,
           updated_members: updated_members
         }),
-        success: () => {
+        success: function (invalidData) {
           showFlashMessage('success', 'Group updated successfully');
           originalData = { ...currentData };
-          originalData.members = members.map(member => ({ ...member }));
+          originalData.members = members
+            .filter(member => !(invalidData['emails'].includes(member.email.toLowerCase())))
+            .map(member => ({ ...member }))
+            .sort((a, b) => {
+              // If current user is admin, put them first
+              if (isAdmin && a.email === curr_email) return -1;
+              if (isAdmin && b.email === curr_email) return 1;
+              // Sort by role priority
+              const roleOrder = { Admin: 1, Editor: 2, Viewer: 3 };
+              return roleOrder[a.role] - roleOrder[b.role];
+            });
+          members = originalData.members.map(member => ({ ...member }));
+          
+          if(invalidData['emails'].length > 0)
+            alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
           checkForChanges();
+          renderMembersList();
           refreshGroupList(groupId);
         },
         error: () => showFlashMessage('error', 'Failed to update group')
@@ -1449,7 +1463,7 @@ function load_calendar() {
         type: 'GET',
         success: function (data) {
           const select = $('#group-select');
-          select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+          select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
           $.each(data, function (index, group) {
             select.append(
@@ -1457,7 +1471,6 @@ function load_calendar() {
                 .attr('id', 'group-select-option-' + group.group_id)
                 .val(group.group_id)
                 .text(group.name)
-                .attr('data-permission', group.permission)
             );
           });
           select.val(groupId);
@@ -1877,14 +1890,14 @@ function create_group() {
                 members: members,
                 permissions: permissions
             }),
-            success: function (response) {
+            success: function (invalidData) {
                 // Update the group-select 
                 $.ajax({
                     url: '/get_groups',
                     type: 'GET',
                     success: function (data) {
                         const select = $('#group-select');
-                        select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+                        select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
                         $.each(data, function (index, group) {
                             select.append(
@@ -1892,7 +1905,6 @@ function create_group() {
                                     .attr('id', 'group-select-option-' + group.group_id)
                                     .val(group.group_id)
                                     .text(group.name)
-                                    .attr('data-permission', group.permission)
                             );
                         });
                     },
@@ -1924,6 +1936,9 @@ function create_group() {
                         });
                     }
                 }, 1000);
+
+                if(invalidData['emails'].length > 0)
+                  alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));      
             },
             error: function (response) {
                 alert('Group Form Submission error');

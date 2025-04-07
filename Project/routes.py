@@ -109,6 +109,7 @@ def signout():
 def create_group():
     if request.method == 'POST':
         group = request.get_json()
+        invalid_emails = []
 
         try:
             newGroup = Group(
@@ -129,8 +130,10 @@ def create_group():
             db.session.add(admin)
             
             for i in range(len(group['members'])):
-                user = User.query.filter_by(email=group['members'][i].lower()).first()
+                email = group['members'][i].lower()
+                user = User.query.filter_by(email=email).first()
                 if user is None:
+                    invalid_emails.append(email)
                     continue
                 newMember = Member(
                     user_id = user.user_id,
@@ -143,7 +146,7 @@ def create_group():
             db.session.rollback()
             return "Unable to add new group to the database"
     
-        return jsonify(success=True)
+        return jsonify({'emails': invalid_emails}), 200
 
 # Group and Event Invites
 @app.route('/check_invites',methods=['GET','POST'])
@@ -631,6 +634,7 @@ def get_info(group_id):
             # Handle member changes
             current_members = {m.user_id: m for m in Member.query.filter_by(group_id=group_id).all()}
             users_cache = {}
+            invalid_emails = []
             
             # Process new members
             for new_mem in group_info['new_members']:
@@ -645,6 +649,8 @@ def get_info(group_id):
                         permission=new_mem['role']
                     )
                     db.session.add(newMember)
+                else:
+                    invalid_emails.append(email)
             
             # Process updated members
             for updated_mem in group_info['updated_members']:
@@ -679,7 +685,7 @@ def get_info(group_id):
         except:
             db.session.rollback()
             return "Unable to update group info"
-        return jsonify(success=True)
+        return jsonify({'emails': invalid_emails}), 200
 
 # To add an event
 @app.route('/add_event',methods=['POST'])
