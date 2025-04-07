@@ -290,15 +290,14 @@ def get_groups():
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
         .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
-        .add_columns(Group.group_id,Group.group_name,Member.permission)
-        .group_by(Group.group_id,Group.group_name,Member.permission)
+        .add_columns(Group.group_id,Group.group_name)
+        .group_by(Group.group_id,Group.group_name)
         .all()
     )
     
     groups_list = [{
         'group_id': group.group_id,
-        'name': group.group_name,
-        'permission':group.permission
+        'name': group.group_name
     } for group in groups]
     
     return jsonify(groups_list)
@@ -361,7 +360,8 @@ def return_data(group_id):
                 'start': local_start_time.isoformat(), 
                 'end': local_end_time.isoformat(),
                 'event_type': 'individual',
-                'is_pending_for_current_user': False
+                'is_pending_for_current_user': False,
+                'event_edit_permission': 'Admin'
             })
             
         group_events = (
@@ -454,7 +454,8 @@ def return_data(group_id):
                 'accepted_participants': accepted_participants,
                 'pending_participants':pending_participants,
                 'declined_participants':declined_participants,
-                'is_pending_for_current_user': is_pending
+                'is_pending_for_current_user': is_pending,
+                'event_edit_permission': 'Viewer'
             })
             
     else:
@@ -466,6 +467,8 @@ def return_data(group_id):
     
         events_data = []
         for event in events:
+            permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+            
             users = (
                 db.session.query()
                 .select_from(User)
@@ -548,7 +551,8 @@ def return_data(group_id):
                 'accepted_participants': accepted_participants,
                 'pending_participants': pending_participants,
                 'declined_participants': declined_participants,
-                'is_pending_for_current_user': is_pending
+                'is_pending_for_current_user': is_pending,
+                'event_edit_permission': permission
             })
     return jsonify(events_data)
 
@@ -680,6 +684,13 @@ def get_info(group_id):
             db.session.rollback()
             return "Unable to update group info"
         return jsonify(success=True)
+
+# To get the group permission info
+@app.route('/get_group_permission/<int:group_id>', methods=['GET'])
+@login_required
+def get_group_permission(group_id):
+    permission = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first().permission
+    return jsonify({'permission':f'${permission}'}), 200
 
 # To add an event
 @app.route('/add_event',methods=['POST'])

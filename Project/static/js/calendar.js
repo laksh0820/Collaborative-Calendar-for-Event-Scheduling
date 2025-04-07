@@ -145,7 +145,23 @@ function load_calendar() {
     selectable: true,
     nowIndicator: true,
     select: function (arg) {
-      handleCalendarSelection(arg);
+      // Get the current user permission corresponding to the group
+      permission = 'Admin';
+      const group_id = document.getElementById('group-select').value;
+      if (group_id != 1) {
+        $.ajax({
+          url: `/get_group_permission/${group_id}`,
+          type: "GET",
+          contentType: "application/json",
+          success: function (respone) {
+            permission = respone.premission
+          },
+          error: function () {
+            showFlashMessage('error', 'Some error occurred');
+          }
+        });
+      }
+      handleCalendarSelection(arg, permission);
     }
   });
 
@@ -169,7 +185,7 @@ function load_calendar() {
     );
 
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;
     if (group_id != 1) {
       document.getElementById("participants-section").style.display = 'block';
       if (group_permission !== 'Viewer') {
@@ -313,7 +329,7 @@ function load_calendar() {
 
   function setupEventActions(info, modal) {
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;;
 
     if (group_permission === 'Viewer' || (group_id == 1 && info.event.extendedProps.event_type === 'group')) {
       document.getElementById('removeEvent').style.display = 'none';
@@ -471,9 +487,8 @@ function load_calendar() {
     });
   }
 
-  function handleCalendarSelection(arg) {
+  function handleCalendarSelection(arg, group_permission) {
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
     if (group_permission !== 'Viewer') {
       prepareEventCreationModal(group_id, arg);
@@ -646,7 +661,7 @@ function load_calendar() {
     info.event.setExtendedProp('pending_participants', pending_participants);
 
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;
     refreshParticipantsList(info, group_permission);
 
     input.value = '';
@@ -683,7 +698,7 @@ function load_calendar() {
     }
 
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;
     refreshParticipantsList(info, group_permission);
   }
 
@@ -978,7 +993,7 @@ function load_calendar() {
             type: 'GET',
             success: function (data) {
               const select = $('#group-select');
-              select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+              select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
               $.each(data, function (index, group) {
                 select.append(
@@ -986,7 +1001,6 @@ function load_calendar() {
                     .attr('id', 'group-select-option-' + group.group_id)
                     .val(group.group_id)
                     .text(group.name)
-                    .attr('data-permission', group.permission)
                 );
               });
 
@@ -1436,7 +1450,7 @@ function load_calendar() {
         type: 'GET',
         success: function (data) {
           const select = $('#group-select');
-          select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+          select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
           $.each(data, function (index, group) {
             select.append(
@@ -1444,7 +1458,6 @@ function load_calendar() {
                 .attr('id', 'group-select-option-' + group.group_id)
                 .val(group.group_id)
                 .text(group.name)
-                .attr('data-permission', group.permission)
             );
           });
           select.val(groupId);
@@ -1871,7 +1884,7 @@ function create_group() {
           type: 'GET',
           success: function (data) {
             const select = $('#group-select');
-            select.empty().append('<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>');
+            select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
             $.each(data, function (index, group) {
               select.append(
@@ -1879,7 +1892,6 @@ function create_group() {
                   .attr('id', 'group-select-option-' + group.group_id)
                   .val(group.group_id)
                   .text(group.name)
-                  .attr('data-permission', group.permission)
               );
             });
           },
