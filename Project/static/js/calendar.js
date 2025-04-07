@@ -1178,7 +1178,7 @@ function load_calendar() {
                           <div class="mb-3">
                               <label class="form-label">Description</label>
                               <div id="groupDescContainer" class="editable-field" style="min-height: 38px; overflow-wrap: break-word;">
-                                  <span id="groupDescDisplay" class="editable-text"></span>
+                                  <div id="groupDescDisplay" class="editable-text" style="white-space: pre-wrap;"></div>
                                   <textarea class="form-control d-none" id="editGroupDescription"></textarea>
                               </div>
                           </div>
