@@ -627,44 +627,46 @@ function load_calendar() {
     const email = input.value.trim();
     const name = input.querySelector(`option[value="${email}"]`).dataset.name;
 
-    const optionToRemove = input.querySelector(`option[value="${email}"]`);
-    if (optionToRemove) optionToRemove.remove();
+    if (email) {
+      const optionToRemove = input.querySelector(`option[value="${email}"]`);
+      if (optionToRemove) optionToRemove.remove();
 
-    const participants = info.event.extendedProps.participants || [];
-    if (participants.length == 1) {
-      participants.forEach(p => {
-        const participantElement = document.getElementById(`participant-email-${p.email}`);
-        const removeElement = document.createElement('button');
-        removeElement.className = "modal-view-participant-remove-button";
-        removeElement.textContent = "Remove";
-        removeElement.id = `modal-view-participant-remove-button-${p.email}`;
-        participantElement.appendChild(removeElement);
+      const participants = info.event.extendedProps.participants || [];
+      if (participants.length == 1) {
+        participants.forEach(p => {
+          const participantElement = document.getElementById(`participant-email-${p.email}`);
+          const removeElement = document.createElement('button');
+          removeElement.className = "modal-view-participant-remove-button";
+          removeElement.textContent = "Remove";
+          removeElement.id = `modal-view-participant-remove-button-${p.email}`;
+          participantElement.appendChild(removeElement);
 
-        const removeHandler = () => viewRemoveParticipant(info, p.email);
-        removeElement.addEventListener('click', removeHandler);
-        calendarResources.modalListeners.push({
-          element: removeElement,
-          event: 'click',
-          handler: removeHandler
+          const removeHandler = () => viewRemoveParticipant(info, p.email);
+          removeElement.addEventListener('click', removeHandler);
+          calendarResources.modalListeners.push({
+            element: removeElement,
+            event: 'click',
+            handler: removeHandler
+          });
         });
-      });
+      }
+
+      const dataString = `{"name":"${name}" ,"email":"${email}" }`;
+      const data = JSON.parse(dataString);
+      participants.push(data);
+      info.event.setExtendedProp('participants', participants);
+
+      // Update the info for pending participants
+      const pending_participants = info.event.extendedProps.pending_participants || [];
+      pending_participants.push(data);
+      info.event.setExtendedProp('pending_participants', pending_participants);
+
+      const group_id = document.getElementById('group-select').value;
+      const group_permission = info.event.extendedProps.event_edit_permission;
+      refreshParticipantsList(info, group_permission);
+
+      input.value = '';
     }
-
-    const dataString = `{"name":"${name}" ,"email":"${email}" }`;
-    const data = JSON.parse(dataString);
-    participants.push(data);
-    info.event.setExtendedProp('participants', participants);
-
-    // Update the info for pending participants
-    const pending_participants = info.event.extendedProps.pending_participants || [];
-    pending_participants.push(data);
-    info.event.setExtendedProp('pending_participants', pending_participants);
-
-    const group_id = document.getElementById('group-select').value;
-    const group_permission = info.event.extendedProps.event_edit_permission;
-    refreshParticipantsList(info, group_permission);
-
-    input.value = '';
   }
 
   function viewRemoveParticipant(info, email) {
@@ -1455,8 +1457,8 @@ function load_calendar() {
               return roleOrder[a.role] - roleOrder[b.role];
             });
           members = originalData.members.map(member => ({ ...member }));
-          
-          if(invalidData['emails'].length > 0)
+
+          if (invalidData['emails'].length > 0)
             alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
           checkForChanges();
           renderMembersList();
@@ -1893,25 +1895,25 @@ function create_group() {
       return;
     }
 
-        // Send data to server
+    // Send data to server
+    $.ajax({
+      url: '/create_group',
+      type: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({
+        name: groupName,
+        description: description,
+        members: members,
+        permissions: permissions
+      }),
+      success: function (invalidData) {
+        // Update the group-select 
         $.ajax({
-            url: '/create_group',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                name: groupName,
-                description: description,
-                members: members,
-                permissions: permissions
-            }),
-            success: function (invalidData) {
-                // Update the group-select 
-                $.ajax({
-                    url: '/get_groups',
-                    type: 'GET',
-                    success: function (data) {
-                        const select = $('#group-select');
-                        select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
+          url: '/get_groups',
+          type: 'GET',
+          success: function (data) {
+            const select = $('#group-select');
+            select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
             $.each(data, function (index, group) {
               select.append(
@@ -1940,24 +1942,24 @@ function create_group() {
                 </div>`;
         const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
 
-                // Auto-remove after  seconds
-                setTimeout(function () {
-                    const flashElements = document.querySelectorAll('#group-sub-success');
-                    if (flashElements) {
-                        flashElements.forEach(flashElement1 => {
-                            flashElement1.style.opacity = '0';
-                            setTimeout(() => flashElement1.remove(), 1000);
-                        });
-                    }
-                }, 1000);
+        // Auto-remove after  seconds
+        setTimeout(function () {
+          const flashElements = document.querySelectorAll('#group-sub-success');
+          if (flashElements) {
+            flashElements.forEach(flashElement1 => {
+              flashElement1.style.opacity = '0';
+              setTimeout(() => flashElement1.remove(), 1000);
+            });
+          }
+        }, 1000);
 
-                if(invalidData['emails'].length > 0)
-                  alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));      
-            },
-            error: function (response) {
-                alert('Group Form Submission error');
-            }
-        });
+        if (invalidData['emails'].length > 0)
+          alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
+      },
+      error: function (response) {
+        alert('Group Form Submission error');
+      }
+    });
 
     // Close the modal
     modal.hide();
