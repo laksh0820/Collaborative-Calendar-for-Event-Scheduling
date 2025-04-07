@@ -237,7 +237,7 @@ def get_notifications():
             db.session.query()
             .select_from(Participate)
             .join(Event, Participate.event_id == Event.event_id)
-            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id, Event.creator != current_user.user_id)
+            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id)
             .add_columns(Participate.event_id,Event.event_name,Participate.invite_time)
             .order_by(Participate.invite_time.desc())
             .all()
