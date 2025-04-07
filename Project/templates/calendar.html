@@ -23,10 +23,9 @@
 			<h1>CALENDAR</h1>
 			<div class="search-bar">
 				<select id="group-select">
-					<option id="group-select-option-1" value="1" data-permission="Admin">Dashboard</option>
+					<option id="group-select-option-1" value="1">Dashboard</option>
 					{% for group in groups %}
-					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}"
-						data-permission="{{ group.permission }}">{{ group.group_name }}</option>
+					<option id="group-select-option-{{ group.group_id }}" value="{{ group.group_id }}">{{ group.group_name }}</option>
 					{% endfor %}
 				</select>
 				<a id="group-settings"><i class="bx bx-cog" class="settings-icon"></i>Group Settings</a>

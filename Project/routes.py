@@ -293,15 +293,14 @@ def get_groups():
         .join(Member, Group.group_id == Member.group_id)
         .join(User, User.user_id == Member.user_id)
         .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
-        .add_columns(Group.group_id,Group.group_name,Member.permission)
-        .group_by(Group.group_id,Group.group_name,Member.permission)
+        .add_columns(Group.group_id,Group.group_name)
+        .group_by(Group.group_id,Group.group_name)
         .all()
     )
     
     groups_list = [{
         'group_id': group.group_id,
-        'name': group.group_name,
-        'permission':group.permission
+        'name': group.group_name
     } for group in groups]
     
     return jsonify(groups_list)
@@ -364,7 +363,8 @@ def return_data(group_id):
                 'start': local_start_time.isoformat(), 
                 'end': local_end_time.isoformat(),
                 'event_type': 'individual',
-                'is_pending_for_current_user': False
+                'is_pending_for_current_user': False,
+                'event_edit_permission': 'Admin'
             })
             
         group_events = (
@@ -457,7 +457,8 @@ def return_data(group_id):
                 'accepted_participants': accepted_participants,
                 'pending_participants':pending_participants,
                 'declined_participants':declined_participants,
-                'is_pending_for_current_user': is_pending
+                'is_pending_for_current_user': is_pending,
+                'event_edit_permission': 'Viewer'
             })
             
     else:
@@ -469,6 +470,8 @@ def return_data(group_id):
     
         events_data = []
         for event in events:
+            permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+            
             users = (
                 db.session.query()
                 .select_from(User)
@@ -551,7 +554,8 @@ def return_data(group_id):
                 'accepted_participants': accepted_participants,
                 'pending_participants': pending_participants,
                 'declined_participants': declined_participants,
-                'is_pending_for_current_user': is_pending
+                'is_pending_for_current_user': is_pending,
+                'event_edit_permission': permission
             })
     return jsonify(events_data)
 
@@ -687,11 +691,24 @@ def get_info(group_id):
             return "Unable to update group info"
         return jsonify({'emails': invalid_emails}), 200
 
+# To get the group permission info
+@app.route('/get_group_permission/<int:group_id>', methods=['GET'])
+@login_required
+def get_group_permission(group_id):
+    permission = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first().permission
+    return jsonify({'permission':f'${permission}'}), 200
+
 # To add an event
 @app.route('/add_event',methods=['POST'])
 @login_required
 def add_event():
     event = request.get_json()
+    
+    if int(event['group_id']) != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=int(event['group_id'])).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
      
     newEvent = Event()
     newEvent.event_name = event['title']
@@ -730,11 +747,10 @@ def add_event():
             participant = Participate()
             participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
             participant.event_id = newEvent.event_id
-            db.session.add(participant)
-            
             if participantEmail == current_user.email:
                 participant.read_status = 'Read'
                 participant.status = 'Accepted'
+            db.session.add(participant)
             
         try:
             db.session.commit()
@@ -744,14 +760,20 @@ def add_event():
     except:
         return "Unable to add event to the database"
     
-    return jsonify(success=True)
+    return jsonify({'status': 'success', 'message':'Event added successfully'}), 200
 
 @app.route('/remove_event/<int:event_id>', methods=['DELETE'])
 @login_required
 def remove_event(event_id):
     event = Event.query.get(event_id)
     if not event:
-        return jsonify({'error': 'Event not found'}), 404
+        return jsonify({'status': 'error', 'message' : 'Event not found'}), 404
+
+    if event.group_id != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
 
     try:
         # First delete participations
@@ -762,47 +784,12 @@ def remove_event(event_id):
         db.session.delete(event)
         
         db.session.commit()
-        return jsonify({'message': 'Event deleted successfully'}), 200
+        return jsonify({'status' : 'success', 'message': 'Event deleted successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'status' : 'error', 'message': str(e)}), 500
 
-@app.route('/update_participate/<int:event_id>/<email>', methods=['PUT'])
-@login_required
-def update_participate(event_id,email):
-    user = User.query.filter_by(email=email).first()
-    participant = Participate()
-    participant.user_id = user.user_id
-    participant.event_id = event_id
-    participant.status = 'Pending'
-    
-    try:
-        db.session.add(participant)
-        db.session.commit()
-        return jsonify({'name': f'{user.name}','email':f'{user.email}'}), 200
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-    
-@app.route('/remove_participate/<int:event_id>/<email>', methods=['DELETE'])
-@login_required
-def remove_participate(event_id,email):
-    user = User.query.filter_by(email=email).first()
-    participant = Participate.query.filter_by(user_id=user.user_id,event_id=event_id).first()
-    
-    if participant:
-        try:
-            db.session.delete(participant)
-            db.session.commit()
-            return jsonify(success=True)
-        
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
-    else:
-        return jsonify(success=True)
 
 @app.route('/update_event/<int:event_id>', methods=['PUT'])
 @login_required
@@ -810,13 +797,64 @@ def update_event(event_id):
     new_event = request.get_json()
     
     event = Event.query.filter_by(event_id=event_id).first()
+    
+    if event.group_id != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
+        
     event.event_name = new_event['title']
     event.description = new_event['description']
     
+    accepted_participants = []
+    declined_participants = []
+    pending_participants = []
+    
+    for participant in event.participations:
+        if participant.status == 'Accepted':
+            accepted_participants.append(participant)
+        elif participant.status == 'Declined':
+            declined_participants.append(participant)
+        else:
+            pending_participants.append(participant)
+    
+    new_accepted_participants_email = []
+    for element in new_event['accepted_participants']:
+        new_accepted_participants_email.append(element['email'])
+    new_declined_participants_email = []
+    for element in new_event['declined_participants']:
+        new_declined_participants_email.append(element['email'])
+    new_pending_participants_email = []
+    for element in new_event['pending_participants']:
+        new_pending_participants_email.append(element['email'])
+            
+    # Update Accpeted participants for the event
+    for participant in accepted_participants:
+        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+        if participant_email not in new_accepted_participants_email:
+            db.session.delete(participant)
+            
+    # Update Declined participants for the event
+    for participant in declined_participants:
+        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+        if participant_email not in new_declined_participants_email:
+            db.session.delete(participant)
+    
+    # Update Pending participants for the event
+    for participant in pending_participants: 
+        db.session.delete(participant)
+    
+    for participant_email in new_pending_participants_email:
+        participant = Participate()
+        participant.user_id = User.query.filter_by(email=participant_email.lower()).first().user_id
+        participant.event_id = event_id
+        db.session.add(participant)
+    
     try:
         db.session.commit() 
-        return jsonify(success=True)
+        return jsonify({'status' : 'success', 'message': 'Event updated successfully'}), 200
     
     except Exception as e:
         db.session.rollback()
-        return {"error": str(e)}, 500
+        return jsonify({'status': 'error', 'message' : str(e)}), 500

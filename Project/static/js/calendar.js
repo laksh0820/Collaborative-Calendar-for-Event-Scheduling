@@ -145,7 +145,23 @@ function load_calendar() {
     selectable: true,
     nowIndicator: true,
     select: function (arg) {
-      handleCalendarSelection(arg);
+      // Get the current user permission corresponding to the group
+      permission = 'Admin';
+      const group_id = document.getElementById('group-select').value;
+      if (group_id != 1) {
+        $.ajax({
+          url: `/get_group_permission/${group_id}`,
+          type: "GET",
+          contentType: "application/json",
+          success: function (respone) {
+            permission = respone.premission
+          },
+          error: function () {
+            showFlashMessage('error', 'Some error occurred');
+          }
+        });
+      }
+      handleCalendarSelection(arg, permission);
     }
   });
 
@@ -169,7 +185,7 @@ function load_calendar() {
     );
 
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;
     if (group_id != 1) {
       document.getElementById("participants-section").style.display = 'block';
       if (group_permission !== 'Viewer') {
@@ -313,7 +329,7 @@ function load_calendar() {
 
   function setupEventActions(info, modal) {
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
+    const group_permission = info.event.extendedProps.event_edit_permission;;
 
     if (group_permission === 'Viewer' || (group_id == 1 && info.event.extendedProps.event_type === 'group')) {
       document.getElementById('removeEvent').style.display = 'none';
@@ -434,13 +450,16 @@ function load_calendar() {
           title: eventTitle,
           // start: eventStart,
           // end: eventEnd,
-          description: description
+          description: description,
+          accepted_participants: event.extendedProps.accepted_participants,
+          declined_participants: event.extendedProps.declined_participants,
+          pending_participants: event.extendedProps.pending_participants
         }),
-        success: function () {
+        success: function (response) {
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
-          showFlashMessage('success', 'Event Updated Successfully');
+          showFlashMessage(response.status, response.message);
         },
         error: function () {
           showFlashMessage('error', 'Error updating event');
@@ -456,9 +475,11 @@ function load_calendar() {
       url: `/remove_event/${event.extendedProps.event_id}`,
       type: 'DELETE',
       contentType: 'application/json',
-      success: function () {
-        event.remove();
-        showFlashMessage('success', 'Event Removed Successfully');
+      success: function (response) {
+        if (response.status == 'success') {
+          event.remove();
+        }
+        showFlashMessage(response.status, response.message);
       },
       error: function () {
         showFlashMessage('error', 'Error Removing event');
@@ -466,9 +487,8 @@ function load_calendar() {
     });
   }
 
-  function handleCalendarSelection(arg) {
+  function handleCalendarSelection(arg, group_permission) {
     const group_id = document.getElementById('group-select').value;
-    const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
 
     if (group_permission !== 'Viewer') {
       prepareEventCreationModal(group_id, arg);
@@ -560,11 +580,11 @@ function load_calendar() {
           group_id: userGroup,
           participants: participants
         }),
-        success: function () {
+        success: function (response) {
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
-          showFlashMessage('success', 'Event Added Successfully');
+          showFlashMessage(response.status, response.message);
         },
         error: function () {
           showFlashMessage('error', 'Error adding event');
@@ -592,6 +612,7 @@ function load_calendar() {
             $('<option></option>')
               .val(member.email)
               .text(member.email)
+              .attr('data-name', member.name)
           );
         });
       },
@@ -604,100 +625,81 @@ function load_calendar() {
   function viewAddParticipant(info) {
     const input = document.getElementById('updateParticipantSelect');
     const email = input.value.trim();
+    const name = input.querySelector(`option[value="${email}"]`).dataset.name;
 
-    if (email) {
-      $.ajax({
-        url: `/update_participate/${info.event.extendedProps.event_id}/${email}`,
-        type: 'PUT',
-        contentType: 'application/json',
-        success: function (data) {
-          const optionToRemove = input.querySelector(`option[value="${email}"]`);
-          if (optionToRemove) optionToRemove.remove();
+    const optionToRemove = input.querySelector(`option[value="${email}"]`);
+    if (optionToRemove) optionToRemove.remove();
 
-          const participants = info.event.extendedProps.participants || [];
-          if (participants.length == 1) {
-            participants.forEach(p => {
-              const participantElement = document.getElementById(`participant-email-${p.email}`);
-              const removeElement = document.createElement('button');
-              removeElement.className = "modal-view-participant-remove-button";
-              removeElement.textContent = "Remove";
-              removeElement.id = `modal-view-participant-remove-button-${p.email}`;
-              participantElement.appendChild(removeElement);
+    const participants = info.event.extendedProps.participants || [];
+    if (participants.length == 1) {
+      participants.forEach(p => {
+        const participantElement = document.getElementById(`participant-email-${p.email}`);
+        const removeElement = document.createElement('button');
+        removeElement.className = "modal-view-participant-remove-button";
+        removeElement.textContent = "Remove";
+        removeElement.id = `modal-view-participant-remove-button-${p.email}`;
+        participantElement.appendChild(removeElement);
 
-              const removeHandler = () => viewRemoveParticipant(info, p.email);
-              removeElement.addEventListener('click', removeHandler);
-              calendarResources.modalListeners.push({
-                element: removeElement,
-                event: 'click',
-                handler: removeHandler
-              });
-            });
-          }
-
-          participants.push(data);
-          info.event.setExtendedProp('participants', participants);
-
-          // Update the info for pending participants
-          const pending_participants = info.event.extendedProps.pending_participants || [];
-          pending_participants.push(data);
-          info.event.setExtendedProp('pending_participants', pending_participants);
-
-          const group_id = document.getElementById('group-select').value;
-          const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
-          refreshParticipantsList(info, group_permission);
-
-          input.value = '';
-        },
-        error: function () {
-          showFlashMessage('error', 'Error adding participant');
-        }
+        const removeHandler = () => viewRemoveParticipant(info, p.email);
+        removeElement.addEventListener('click', removeHandler);
+        calendarResources.modalListeners.push({
+          element: removeElement,
+          event: 'click',
+          handler: removeHandler
+        });
       });
     }
+
+    const dataString = `{"name":"${name}" ,"email":"${email}" }`;
+    const data = JSON.parse(dataString);
+    participants.push(data);
+    info.event.setExtendedProp('participants', participants);
+
+    // Update the info for pending participants
+    const pending_participants = info.event.extendedProps.pending_participants || [];
+    pending_participants.push(data);
+    info.event.setExtendedProp('pending_participants', pending_participants);
+
+    const group_id = document.getElementById('group-select').value;
+    const group_permission = info.event.extendedProps.event_edit_permission;
+    refreshParticipantsList(info, group_permission);
+
+    input.value = '';
   }
 
   function viewRemoveParticipant(info, email) {
-    $.ajax({
-      url: `/remove_participate/${info.event.extendedProps.event_id}/${email}`,
-      type: 'DELETE',
-      contentType: 'application/json',
-      success: function () {
-        document.getElementById(`participant-email-${email}`)?.remove();
-        const participants = info.event.extendedProps.participants || [];
-        const updatedParticipants = participants.filter(p => p.email !== email);
-        info.event.setExtendedProp('participants', updatedParticipants);
+    document.getElementById(`participant-email-${email}`)?.remove();
+    const participants = info.event.extendedProps.participants || [];
+    const updatedParticipants = participants.filter(p => p.email !== email);
+    info.event.setExtendedProp('participants', updatedParticipants);
 
-        if (updatedParticipants.length == 1) {
-          updatedParticipants.forEach(p => {
-            document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
-          });
-        }
+    if (updatedParticipants.length == 1) {
+      updatedParticipants.forEach(p => {
+        document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
+      });
+    }
 
-        const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
-        const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
-        const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
+    const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
+    const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
+    const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
 
-        if (inAccepted) {
-          const accepted_participants = info.event.extendedProps.accepted_participants || [];
-          const updated_accepted_participants = accepted_participants.filter(p => p.email !== email);
-          info.event.setExtendedProp('accepted_participants', updated_accepted_participants);
-        } else if (inDecline) {
-          const declined_participants = info.event.extendedProps.declined_participants || [];
-          const updated_declined_participants = declined_participants.filter(p => p.email !== email);
-          info.event.setExtendedProp('declined_participants', updated_declined_participants);
-        } else {
-          const pending_participants = info.event.extendedProps.pending_participants || [];
-          const updated_pending_participants = pending_participants.filter(p => p.email !== email);
-          info.event.setExtendedProp('pending_participants', updated_pending_participants);
-        }
+    if (inAccepted) {
+      const accepted_participants = info.event.extendedProps.accepted_participants || [];
+      const updated_accepted_participants = accepted_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('accepted_participants', updated_accepted_participants);
+    } else if (inDecline) {
+      const declined_participants = info.event.extendedProps.declined_participants || [];
+      const updated_declined_participants = declined_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('declined_participants', updated_declined_participants);
+    } else {
+      const pending_participants = info.event.extendedProps.pending_participants || [];
+      const updated_pending_participants = pending_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('pending_participants', updated_pending_participants);
+    }
 
-        const group_id = document.getElementById('group-select').value;
-        const group_permission = document.getElementById(`group-select-option-${group_id}`).dataset.permission;
-        refreshParticipantsList(info, group_permission);
-      },
-      error: function () {
-        showFlashMessage('error', 'Error removing participant');
-      }
-    });
+    const group_id = document.getElementById('group-select').value;
+    const group_permission = info.event.extendedProps.event_edit_permission;
+    refreshParticipantsList(info, group_permission);
   }
 
   function showParticipants() {
@@ -1001,6 +1003,10 @@ function load_calendar() {
                     .text(group.name)
                 );
               });
+
+              calendar.removeAllEvents();
+              cleanupResources();
+              calendar.refetchEvents();
 
               fetch_unread_notifications_count();   // Refresh the notification count
             },
@@ -1530,49 +1536,49 @@ const notificationBadge = document.getElementById('notificationBadge');
 
 // Fetch number of unread notifications on page load
 document.addEventListener('DOMContentLoaded', function () {
-    fetch_unread_notifications_count();
+  fetch_unread_notifications_count();
 });
 
 // Toggle notification popover
 if (notificationBtn !== null) {
-    notificationBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (notificationPopover.classList.contains('d-none')) {
-            // Remove d-none class to show the popover
-            notificationPopover.classList.remove('d-none');
+  notificationBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (notificationPopover.classList.contains('d-none')) {
+      // Remove d-none class to show the popover
+      notificationPopover.classList.remove('d-none');
 
-            // Use requestAnimationFrame to ensure the d-none removal is processed
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    notificationPopover.classList.add('show');
-                    get_notifications(); // Fetch notifications when opening the popover
-                });
-            });
-        }
-        else {
-            notificationPopover.classList.remove('show');
-            // Wait for transition to complete before hiding
-            setTimeout(() => {
-                notificationPopover.classList.add('d-none');
-            }, 300); // Match the transition duration
-        }
-    });
+      // Use requestAnimationFrame to ensure the d-none removal is processed
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          notificationPopover.classList.add('show');
+          get_notifications(); // Fetch notifications when opening the popover
+        });
+      });
+    }
+    else {
+      notificationPopover.classList.remove('show');
+      // Wait for transition to complete before hiding
+      setTimeout(() => {
+        notificationPopover.classList.add('d-none');
+      }, 300); // Match the transition duration
+    }
+  });
 
-    // Disable text selection on double click with mousedown
-    notificationBtn.addEventListener('mousedown', function (e) {
-        e.preventDefault();
-    }, false);
+  // Disable text selection on double click with mousedown
+  notificationBtn.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+  }, false);
 }
 
 
 // Close notification popover when clicking outside
 document.addEventListener('click', (e) => {
-    if (notificationPopover !== null && !notificationPopover.contains(e.target) && e.target !== notificationBtn) {
-        notificationPopover.classList.remove('show');
-        setTimeout(() => {
-            notificationPopover.classList.add('d-none');
-        }, 300);
-    }
+  if (notificationPopover !== null && !notificationPopover.contains(e.target) && e.target !== notificationBtn) {
+    notificationPopover.classList.remove('show');
+    setTimeout(() => {
+      notificationPopover.classList.add('d-none');
+    }, 300);
+  }
 });
 
 // Fetch unread notifications count
@@ -1581,26 +1587,26 @@ function fetch_unread_notifications_count() {
   if (notificationBadge === null) return;
 
   $.ajax({
-      url: '/get_notifications',
-      type: 'GET',
-      success: function (response) {
-          const unreadCount = response.length;
-          notificationBadge.textContent = unreadCount;
-          if (unreadCount > 0) {
-              // Show the badge if there are unread notifications
-              if (notificationBadge.classList.contains('d-none')) {
-                  notificationBadge.classList.remove('d-none');
-              }
-          } else {
-              // Hide the badge if there are no unread notifications
-              if (!notificationBadge.classList.contains('d-none')) {
-                  notificationBadge.classList.add('d-none');
-              }
-          }
-      },
-      error: function () {
-          console.error('Error fetching notifications count');
+    url: '/get_notifications',
+    type: 'GET',
+    success: function (response) {
+      const unreadCount = response.length;
+      notificationBadge.textContent = unreadCount;
+      if (unreadCount > 0) {
+        // Show the badge if there are unread notifications
+        if (notificationBadge.classList.contains('d-none')) {
+          notificationBadge.classList.remove('d-none');
+        }
+      } else {
+        // Hide the badge if there are no unread notifications
+        if (!notificationBadge.classList.contains('d-none')) {
+          notificationBadge.classList.add('d-none');
+        }
       }
+    },
+    error: function () {
+      console.error('Error fetching notifications count');
+    }
   });
 }
 
@@ -1617,99 +1623,99 @@ function get_notifications() {
       // Update the number of unread notifications
       const unreadCount = response.length;
       if (unreadCount > 0) {
-          notificationBadge.textContent = unreadCount;
-          notificationBadge.classList.remove('d-none');
+        notificationBadge.textContent = unreadCount;
+        notificationBadge.classList.remove('d-none');
       } else {
-          notificationBadge.classList.add('d-none');
+        notificationBadge.classList.add('d-none');
       }
 
       // No notifications available
       if (response.length === 0) {
-          notificationsContainer.html('<div class="text-center py-3"><p>No unread notifications</p></div>');
-          return;
+        notificationsContainer.html('<div class="text-center py-3"><p>No unread notifications</p></div>');
+        return;
       }
 
       response.forEach((notification, index, array) => {
-          // Check if this notification is the last one in the list
-          if (index === array.length - 1) {
-              const notificationHTML = `
+        // Check if this notification is the last one in the list
+        if (index === array.length - 1) {
+          const notificationHTML = `
               <div class="notification-item ${(notification.read_status === "Read") ? '' : 'unread'} last-notification" data-id="${notification.id}" data-type="${notification.type}">
                   <div class="p-3 notification-content">
                       <p class="mb-0">You have been invited to ${(notification.type === 'group') ? 'group ' : 'event '} ${notification.name}</p>
                   </div>
                   <div class="notification-footer p-2">${notification.passed_time}</div>
               </div>`;
-              notificationsContainer.append(notificationHTML);
-          }
-          else {
-              const notificationHTML = `
+          notificationsContainer.append(notificationHTML);
+        }
+        else {
+          const notificationHTML = `
               <div class="notification-item ${(notification.read_status === "Read") ? '' : 'unread'}" data-id="${notification.id}" data-type="${notification.type}">
                   <div class="p-3 notification-content">
                       <p class="mb-0">You have been invited to ${(notification.type === 'group') ? 'group ' : 'event '} ${notification.name}</p>
                   </div>
                   <div class="notification-footer p-2">${notification.passed_time}</div>
               </div>`;
-              notificationsContainer.append(notificationHTML);
-          }
+          notificationsContainer.append(notificationHTML);
+        }
       });
 
       /* Setup click handlers for notifications */
       // Mark notifications as read when clicked
       const unread_notifications = document.querySelectorAll('.notification-item.unread');
       unread_notifications.forEach(notification => {
-          notification.addEventListener('click', () => {
-              // Check if notification is already read
-              if (!notification.classList.contains('unread')) return;
+        notification.addEventListener('click', () => {
+          // Check if notification is already read
+          if (!notification.classList.contains('unread')) return;
 
-              const notification_id = notification.getAttribute('data-id');
-              const notification_type = notification.getAttribute('data-type');
+          const notification_id = notification.getAttribute('data-id');
+          const notification_type = notification.getAttribute('data-type');
 
-              // Send a request to mark the notification as read
-              $.ajax({
-                  url: '/get_notifications',
-                  type: 'POST',
-                  contentType: 'application/json',
-                  data: JSON.stringify({
-                      id: notification_id,
-                      type: notification_type
-                  }),
-                  success: function () {
-                      notification.classList.remove('unread');
-                      updateNotificationCount(); // Update the notification count
-                  },
-                  error: function () {
-                      console.error('Error marking notification as read');
-                  }
-              });
+          // Send a request to mark the notification as read
+          $.ajax({
+            url: '/get_notifications',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+              id: notification_id,
+              type: notification_type
+            }),
+            success: function () {
+              notification.classList.remove('unread');
+              updateNotificationCount(); // Update the notification count
+            },
+            error: function () {
+              console.error('Error marking notification as read');
+            }
           });
+        });
       });
 
       // Disable text selection on double click with mousedown
       unread_notifications.forEach(notification => {
-          notification.addEventListener('mousedown', function (e) {
-              e.preventDefault();
-          }, false);
+        notification.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+        }, false);
       });
     },
     error: function () {
-        alert('Error loading notifications. Please try again later.');
+      alert('Error loading notifications. Please try again later.');
     },
   });
 
   // Update notification badge count
   function updateNotificationCount() {
-      const unreadCount = document.querySelectorAll('.notification-item.unread').length;
-      const notificationBadge = document.getElementById('notificationBadge');
+    const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+    const notificationBadge = document.getElementById('notificationBadge');
 
-      // Check if the badge is hidden, then unhide it
-      if (notificationBadge.classList.contains('d-none')) {
-          notificationBadge.classList.remove('d-none');
-      }
-      // Update the badge count
-      notificationBadge.textContent = unreadCount;
-      if (unreadCount === 0) {
-          notificationBadge.classList.add('d-none');
-      }
+    // Check if the badge is hidden, then unhide it
+    if (notificationBadge.classList.contains('d-none')) {
+      notificationBadge.classList.remove('d-none');
+    }
+    // Update the badge count
+    notificationBadge.textContent = unreadCount;
+    if (unreadCount === 0) {
+      notificationBadge.classList.add('d-none');
+    }
   }
 }
 
@@ -1720,13 +1726,13 @@ createGrp.addEventListener('click', create_group);
 
 // Create group modal functionality
 function create_group() {
-    // Reset previous error states
-    $('.is-invalid').removeClass('is-invalid');
-    $('.invalid-feedback').hide();
+  // Reset previous error states
+  $('.is-invalid').removeClass('is-invalid');
+  $('.invalid-feedback').hide();
 
-    // Create modal HTML if it doesn't exist
-    if (!document.getElementById('modal-create-group')) {
-      const modalHTML = `
+  // Create modal HTML if it doesn't exist
+  if (!document.getElementById('modal-create-group')) {
+    const modalHTML = `
       <div class="modal fade" id="modal-create-group" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
           <div class="modal-dialog">
               <div class="modal-content">
@@ -1781,103 +1787,103 @@ function create_group() {
               </div>
           </div>
       </div>`;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-        // Add member functionality
-        document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
-            e.preventDefault();
-            addMember();
-        });
-        document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addMember();
-            }
-        });
+    // Add member functionality
+    document.getElementById('addMemberBtn')?.addEventListener('click', function (e) {
+      e.preventDefault();
+      addMember();
+    });
+    document.getElementById('memberInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addMember();
+      }
+    });
 
-        // Submit and Cancel button functionality
-        document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
-        document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
+    // Submit and Cancel button functionality
+    document.getElementById('submitGroupBtn')?.addEventListener('click', submitGroup);
+    document.getElementById('cancelGroupBtn')?.addEventListener('click', cancelGroup);
+  }
+
+  // Initialize modal
+  const modalEl = document.getElementById('modal-create-group');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  // Show modal
+  modal.show();
+
+  const members = [];
+  const permissions = [];
+
+  function addMember() {
+    if ($(`#memberInput`).hasClass('is-invalid')) {
+      $(`#memberInput`).removeClass('is-invalid');
+      $(`#member-invalid-feedback`).hide();
     }
 
-    // Initialize modal
-    const modalEl = document.getElementById('modal-create-group');
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const meminput = document.getElementById('memberInput');
+    const email = meminput.value.trim();
+    const perminput = document.getElementById('roleDropdown');
+    const perm = perminput.textContent.trim();
 
-    // Show modal
-    modal.show();
-
-    const members = [];
-    const permissions = [];
-
-    function addMember() {
-        if ($(`#memberInput`).hasClass('is-invalid')) {
-            $(`#memberInput`).removeClass('is-invalid');
-            $(`#member-invalid-feedback`).hide();
-        }
-
-        const meminput = document.getElementById('memberInput');
-        const email = meminput.value.trim();
-        const perminput = document.getElementById('roleDropdown');
-        const perm = perminput.textContent.trim();
-
-        const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        if (!emailRegex.test(email)) {
-            $(`#memberInput`).addClass('is-invalid');
-            $(`#member-invalid-feedback`).text('Please enter a valid email').show();
-            return;
-        }
-        if (members.includes(email)) {
-            $(`#memberInput`).addClass('is-invalid');
-            $(`#member-invalid-feedback`).text('Member already exists').show();
-            return;
-        }
-        if (email) {
-            members.push(email);
-            permissions.push(perm);
-            renderMembersList();
-            meminput.value = '';
-            meminput.focus();
-        }
+    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!emailRegex.test(email)) {
+      $(`#memberInput`).addClass('is-invalid');
+      $(`#member-invalid-feedback`).text('Please enter a valid email').show();
+      return;
     }
-
-    function removeMember(email) {
-        const index = members.indexOf(email);
-        if (index !== -1) {
-            members.splice(index, 1);
-            permissions.splice(index, 1);
-            renderMembersList();
-        }
+    if (members.includes(email)) {
+      $(`#memberInput`).addClass('is-invalid');
+      $(`#member-invalid-feedback`).text('Member already exists').show();
+      return;
     }
+    if (email) {
+      members.push(email);
+      permissions.push(perm);
+      renderMembersList();
+      meminput.value = '';
+      meminput.focus();
+    }
+  }
 
-    function renderMembersList() {
-        const container = document.getElementById('membersList');
-        container.innerHTML = '';
+  function removeMember(email) {
+    const index = members.indexOf(email);
+    if (index !== -1) {
+      members.splice(index, 1);
+      permissions.splice(index, 1);
+      renderMembersList();
+    }
+  }
 
-        members.forEach(email => {
-            const badge = document.createElement('span');
-            badge.className = 'badge d-flex align-items-center';
-            badge.style = 'background:rgb(30, 18, 82);'
-            badge.innerHTML = `
+  function renderMembersList() {
+    const container = document.getElementById('membersList');
+    container.innerHTML = '';
+
+    members.forEach(email => {
+      const badge = document.createElement('span');
+      badge.className = 'badge d-flex align-items-center';
+      badge.style = 'background:rgb(30, 18, 82);'
+      badge.innerHTML = `
                 ${email}
                 <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${email}"></button>
             `;
-            container.appendChild(badge);
+      container.appendChild(badge);
 
-            // Add event listener to remove button
-            badge.querySelector('button').addEventListener('click', () => removeMember(email));
-        });
+      // Add event listener to remove button
+      badge.querySelector('button').addEventListener('click', () => removeMember(email));
+    });
+  }
+
+  function submitGroup() {
+    const groupName = document.getElementById('groupName').value.trim();
+    const description = document.getElementById('groupDescription').value.trim();
+
+    if (!groupName) {
+      $(`#groupName`).addClass('is-invalid');
+      $(`#groupName`).next('.invalid-feedback').text('Please enter a group name').show();
+      return;
     }
-
-    function submitGroup() {
-        const groupName = document.getElementById('groupName').value.trim();
-        const description = document.getElementById('groupDescription').value.trim();
-
-        if (!groupName) {
-            $(`#groupName`).addClass('is-invalid');
-            $(`#groupName`).next('.invalid-feedback').text('Please enter a group name').show();
-            return;
-        }
 
         // Send data to server
         $.ajax({
@@ -1899,32 +1905,32 @@ function create_group() {
                         const select = $('#group-select');
                         select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
-                        $.each(data, function (index, group) {
-                            select.append(
-                                $('<option></option>')
-                                    .attr('id', 'group-select-option-' + group.group_id)
-                                    .val(group.group_id)
-                                    .text(group.name)
-                            );
-                        });
-                    },
-                    error: function () {
-                        $('#group-select').html('<option value="" disabled>Error loading groups</option>');
-                    }
-                });
+            $.each(data, function (index, group) {
+              select.append(
+                $('<option></option>')
+                  .attr('id', 'group-select-option-' + group.group_id)
+                  .val(group.group_id)
+                  .text(group.name)
+              );
+            });
+          },
+          error: function () {
+            $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+          }
+        });
 
-                // Remove any existing div with the class
-                const existingDivs = document.querySelectorAll('.alert');
-                existingDivs.forEach(div => div.remove());
+        // Remove any existing div with the class
+        const existingDivs = document.querySelectorAll('.alert');
+        existingDivs.forEach(div => div.remove());
 
-                // Display the success flash message
-                const flashHTML = `
+        // Display the success flash message
+        const flashHTML = `
                 <div class="alert alert-dismissible fade show" role="alert"
                     style="background-color:white; color:black; padding:10px; margin-right:5px; z-index: 2000;" id="group-sub-success">
                     <i class="bx bx-check-circle" style="color:lawngreen;"></i>
                     Successfully Created Group
                 </div>`;
-                const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
+        const flashElement = document.body.insertAdjacentHTML('beforeend', flashHTML);
 
                 // Auto-remove after  seconds
                 setTimeout(function () {
@@ -1945,21 +1951,21 @@ function create_group() {
             }
         });
 
-        // Close the modal
-        modal.hide();
+    // Close the modal
+    modal.hide();
 
-        // Reset form
-        document.getElementById('createGroupForm').reset();
-        members.length = 0;
-        permissions.length = 0;
-        renderMembersList();
-    }
+    // Reset form
+    document.getElementById('createGroupForm').reset();
+    members.length = 0;
+    permissions.length = 0;
+    renderMembersList();
+  }
 
-    function cancelGroup() {
-        // Reset form
-        document.getElementById('createGroupForm').reset();
-        members.length = 0;
-        permissions.length = 0;
-        renderMembersList();
-    }
+  function cancelGroup() {
+    // Reset form
+    document.getElementById('createGroupForm').reset();
+    members.length = 0;
+    permissions.length = 0;
+    renderMembersList();
+  }
 }
