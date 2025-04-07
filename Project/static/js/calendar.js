@@ -1156,8 +1156,16 @@ function load_calendar() {
                   </div>
                   <div class="modal-body">
                       <form id="editGroupForm">
+                          <style>
+                              .form-label {
+                              font-weight: 600;
+                              letter-spacing: 0.010em;
+                              font-size: 18px;
+                              margin-bottom: 2px;
+                              }
+                          </style>
                           <div class="mb-3">
-                              <label class="form-label text-body-secondary fw-bold">Group Name</label>
+                              <label class="form-label">Group Name</label>
                               <div id="groupNameContainer" class="editable-field" style="min-height: 38px;">
                                   <span id="groupNameDisplay" class="editable-text"></span>
                                   <input type="text" class="form-control d-none" id="editGroupName" required>
@@ -1166,14 +1174,14 @@ function load_calendar() {
                               <div class="invalid-feedback"></div>
                           </div>
                           <div class="mb-3">
-                              <label class="form-label text-body-secondary fw-bold">Description</label>
+                              <label class="form-label">Description</label>
                               <div id="groupDescContainer" class="editable-field" style="min-height: 38px; overflow-wrap: break-word;">
                                   <span id="groupDescDisplay" class="editable-text"></span>
                                   <textarea class="form-control d-none" id="editGroupDescription"></textarea>
                               </div>
                           </div>
                           <div class="mb-3">
-                              <label class="form-label text-body-secondary fw-bold">Members</label>
+                              <label class="form-label">Members</label>
                               ${isAdmin ? `
                               <div class="input-group mb-2">
                                   <input type="text" class="form-control" id="editMemberInput" placeholder="Enter email">
