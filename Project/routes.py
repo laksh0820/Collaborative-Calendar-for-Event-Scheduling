@@ -686,6 +686,12 @@ def get_info(group_id):
 @login_required
 def add_event():
     event = request.get_json()
+    
+    if int(event['group_id']) != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=int(event['group_id'])).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
      
     newEvent = Event()
     newEvent.event_name = event['title']
@@ -737,14 +743,20 @@ def add_event():
     except:
         return "Unable to add event to the database"
     
-    return jsonify(success=True)
+    return jsonify({'status': 'success', 'message':'Event added successfully'}), 200
 
 @app.route('/remove_event/<int:event_id>', methods=['DELETE'])
 @login_required
 def remove_event(event_id):
     event = Event.query.get(event_id)
     if not event:
-        return jsonify({'error': 'Event not found'}), 404
+        return jsonify({'status': 'error', 'message' : 'Event not found'}), 404
+
+    if event.group_id != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
 
     try:
         # First delete participations
@@ -755,11 +767,11 @@ def remove_event(event_id):
         db.session.delete(event)
         
         db.session.commit()
-        return jsonify({'message': 'Event deleted successfully'}), 200
+        return jsonify({'status' : 'success', 'message': 'Event deleted successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'status' : 'error', 'message': str(e)}), 500
 
 
 @app.route('/update_event/<int:event_id>', methods=['PUT'])
@@ -768,6 +780,13 @@ def update_event(event_id):
     new_event = request.get_json()
     
     event = Event.query.filter_by(event_id=event_id).first()
+    
+    if event.group_id != 1:
+        # Check if the user has the permission to add the event
+        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        if permission == 'Viewer':
+            return jsonify({'status': 'error','message': 'Permission denied'}), 200
+        
     event.event_name = new_event['title']
     event.description = new_event['description']
     
@@ -817,8 +836,8 @@ def update_event(event_id):
     
     try:
         db.session.commit() 
-        return jsonify(success=True)
+        return jsonify({'status' : 'success', 'message': 'Event updated successfully'}), 200
     
     except Exception as e:
         db.session.rollback()
-        return {"error": str(e)}, 500
+        return jsonify({'status': 'error', 'message' : str(e)}), 500

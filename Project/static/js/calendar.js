@@ -439,11 +439,11 @@ function load_calendar() {
           declined_participants: event.extendedProps.declined_participants,
           pending_participants: event.extendedProps.pending_participants
         }),
-        success: function () {
+        success: function (response) {
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
-          showFlashMessage('success', 'Event Updated Successfully');
+          showFlashMessage(response.status, response.message);
         },
         error: function () {
           showFlashMessage('error', 'Error updating event');
@@ -459,9 +459,11 @@ function load_calendar() {
       url: `/remove_event/${event.extendedProps.event_id}`,
       type: 'DELETE',
       contentType: 'application/json',
-      success: function () {
-        event.remove();
-        showFlashMessage('success', 'Event Removed Successfully');
+      success: function (response) {
+        if (response.status == 'success') {
+          event.remove();
+        }
+        showFlashMessage(response.status, response.message);
       },
       error: function () {
         showFlashMessage('error', 'Error Removing event');
@@ -563,11 +565,11 @@ function load_calendar() {
           group_id: userGroup,
           participants: participants
         }),
-        success: function () {
+        success: function (response) {
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
-          showFlashMessage('success', 'Event Added Successfully');
+          showFlashMessage(response.status, response.message);
         },
         error: function () {
           showFlashMessage('error', 'Error adding event');
