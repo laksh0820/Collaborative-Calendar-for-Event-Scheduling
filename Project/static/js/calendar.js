@@ -175,6 +175,38 @@ function load_calendar() {
     calendar.refetchEvents();
   });
 
+  // Set the Date Time field in the View event modal
+  function setDateTime(timestamp, event_time) {
+    // Create a Date object from the timestamp
+    const eventDate = new Date(timestamp);
+
+    // Extract date components
+    const year = eventDate.getFullYear();
+    const month = String(eventDate.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(eventDate.getDate()).padStart(2, '0');
+
+    // Extract time components
+    const hours = String(eventDate.getHours()).padStart(2, '0');
+    const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+
+    // Format for date input (YYYY-MM-DD)
+    const dateValue = `${year}-${month}-${day}`;
+
+    // Format for time input (HH:MM)
+    const timeValue = `${hours}:${minutes}`;
+
+    if (event_time === "start-datetime") {
+      // Set values to your input fields
+      document.getElementById('view-event-start-date').value = dateValue;
+      document.getElementById('view-event-start-time').value = timeValue;
+    }
+    else {
+      // Set values to your input fields
+      document.getElementById('view-event-end-date').value = dateValue;
+      document.getElementById('view-event-end-time').value = timeValue;
+    }
+  }
+
   // Event modal functions
   function showEventModal(info) {
     const modal = new bootstrap.Modal('#modal-view-event');
@@ -183,6 +215,9 @@ function load_calendar() {
       info.event.extendedProps?.description ||
       '<span class="no-description">No description</span>'
     );
+
+    setDateTime(info.event.start, "start-datetime");
+    setDateTime(info.event.end, "end-datetime");
 
     const group_id = document.getElementById('group-select').value;
     const group_permission = info.event.extendedProps.event_edit_permission;
@@ -410,10 +445,54 @@ function load_calendar() {
     externalDiv.appendChild(participantElement);
   }
 
+  function convertToISO(dateInput, timeInput) {
+    // Combine date and time strings
+    const dateTimeString = `${dateInput}T${timeInput}`;
+
+    // Create Date object (this will be in local timezone)
+    const dateObj = new Date(dateTimeString);
+
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date or time input');
+    }
+
+    // Convert to ISO string and remove milliseconds and timezone
+    const isoString = dateObj.toISOString().replace(/\.\d{3}Z$/, '');
+
+    return isoString;
+  }
+
   function saveViewEvent(event) {
     const eventTitle = $('#model-view-title-editable').text().trim();
-    // const eventStart = $('#eventStart').val().trim();
-    // const eventEnd = $('#eventEnd').val().trim();
+
+    // Get values from HTML inputs
+    const startDateValue = document.getElementById('view-event-start-date').value; // e.g., "2025-04-08"
+    const startTimeValue = document.getElementById('view-event-start-time').value; // e.g., "05:30"
+
+    // Get values from HTML inputs
+    const endDateValue = document.getElementById('view-event-end-date').value; // e.g., "2025-04-08"
+    const endTimeValue = document.getElementById('view-event-end-time').value; // e.g., "05:30"
+
+    var eventStart;
+    try {
+      eventStart = convertToISO(startDateValue, startTimeValue);
+    }
+    catch (error) {
+      console.error(error.message);
+      return;
+    }
+    console.log(eventStart);
+
+    var eventEnd;
+    try {
+      eventEnd = convertToISO(endDateValue, endTimeValue);
+    }
+    catch (error) {
+      console.error(error.message);
+      return;
+    }
+
     const description = document.getElementById("model-view-description-editable").innerText.trim();
 
     $('.is-invalid').removeClass('is-invalid');
@@ -434,7 +513,9 @@ function load_calendar() {
     // if (!eventEnd) {
     //   showError('eventEnd', 'End time is required');
     //   isValid = false;
-    // } else if (eventStart && new Date(eventStart) >= new Date(eventEnd)) {
+    // } 
+
+    // if (eventStart && new Date(eventStart) >= new Date(eventEnd)) {
     //   showError('eventEnd', 'End time must be after start time');
     //   isValid = false;
     // }
@@ -448,8 +529,8 @@ function load_calendar() {
         contentType: 'application/json',
         data: JSON.stringify({
           title: eventTitle,
-          // start: eventStart,
-          // end: eventEnd,
+          start: eventStart,
+          end: eventEnd,
           description: description,
           accepted_participants: event.extendedProps.accepted_participants,
           declined_participants: event.extendedProps.declined_participants,

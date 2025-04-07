@@ -54,17 +54,49 @@
 			</div>
 			<div class="modal-body">
 				<div class="description" style="display: flex; margin-bottom: 1.5rem;">
-					<span className="icon">📅</span>
+					<span className="icon"><i class="bx bx-calendar"></i></span>
 					<div class="event-body" id="model-view-description-editable" contenteditable="true"
 						style="margin-left: 5px; max-width: 95%; min-width: 95%; overflow-wrap: break-word; white-space: pre-wrap;"
 						onkeydown="if(event.key === 'Enter') { document.execCommand('insertHTML', false, '<br>'); event.preventDefault(); }"
 						onfocus="this.textContent === 'No description available' && (this.textContent = '')"
 						onblur="!this.textContent.trim() && (this.textContent = 'No description available')"></div>
 				</div>
+
+				<!-- Date/Time Section -->
+				<div class="datetime-section" style="margin-bottom: 1.5rem;">
+					<div style="display: flex;">
+						<span class="icon"><i class="bx bx-time"></i></span>
+						<h5 style="margin-left: 5px;">Event Time</h5>
+					</div>
+					<div class="datetime-row" style="display: flex; margin-bottom: 0.5rem; margin-left: 1rem;">
+						<div style="margin-left: 5px; display: flex; gap: 10px; flex-wrap: wrap;">
+							<div>
+								<label style="display: block; font-size: 0.8rem; color: #666;">Start Date</label>
+								<input type="date" id="view-event-start-date" class="form-control" style="width: 100%;">
+							</div>
+							<div>
+								<label style="display: block; font-size: 0.8rem; color: #666;">Start Time</label>
+								<input type="time" id="view-event-start-time" class="form-control" style="width: 100%;">
+							</div>
+						</div>
+					</div>
+					<div class="datetime-row" style="display: flex; margin-left: 1rem;">
+						<div style="margin-left: 5px; display: flex; gap: 10px; flex-wrap: wrap;">
+							<div>
+								<label style="display: block; font-size: 0.8rem; color: #666;">End Date</label>
+								<input type="date" id="view-event-end-date" class="form-control" style="width: 100%;">
+							</div>
+							<div>
+								<label style="display: block; font-size: 0.8rem; color: #666;">End Time</label>
+								<input type="time" id="view-event-end-time" class="form-control" style="width: 100%;">
+							</div>
+						</div>
+					</div>
+				</div>
 				<!-- Participants Section -->
 				<div id="participants-section" class="mt-2">
 					<div class="participantHeader" style="display: flex;">
-						<span className="icon">👥</span>
+						<span className="icon"><i class="bx bx-group"></i></span>
 						<h5 style="margin-left: 5px;">Participants</h5>
 					</div>
 					<div id="participants-list" class="flex-wrap mt-1"></div>

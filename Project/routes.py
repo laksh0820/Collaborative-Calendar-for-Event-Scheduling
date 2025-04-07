@@ -808,6 +808,9 @@ def update_event(event_id):
         
     event.event_name = new_event['title']
     event.description = new_event['description']
+    event.start_time = datetime.fromisoformat(new_event['start'])
+    event.end_time = datetime.fromisoformat(new_event['end'])
+    print(event.start_time)
     
     accepted_participants = []
     declined_participants = []
