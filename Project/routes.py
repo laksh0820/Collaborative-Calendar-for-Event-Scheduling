@@ -202,11 +202,13 @@ def check_invites():
         try:
             if response['invite_type'] == 'group':
                 invite = Member.query.filter_by(member_id=response['invite_id']).first()
+                if response['status'] == 'Declined':
+                    db.session.delete(invite)
+                else:
+                    invite.status = response['status']
+                    invite.read_status = 'Read'
             else:
                 invite = Participate.query.filter_by(participate_id=response['invite_id']).first()
-            if response['status'] == 'Declined':
-                db.session.delete(invite)
-            else:
                 invite.status = response['status']
                 invite.read_status = 'Read'
             db.session.commit()
