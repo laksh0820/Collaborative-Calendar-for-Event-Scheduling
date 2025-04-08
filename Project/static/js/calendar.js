@@ -179,15 +179,16 @@ function load_calendar() {
   function setDateTime(timestamp, event_time) {
     // Create a Date object from the timestamp
     const eventDate = new Date(timestamp);
+    const utcTime = new Date(eventDate.toISOString().slice(0, 19)); // Output: 2025-04-08T10:00:00
 
     // Extract date components
-    const year = eventDate.getFullYear();
-    const month = String(eventDate.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const day = String(eventDate.getDate()).padStart(2, '0');
+    const year = utcTime.getFullYear();
+    const month = String(utcTime.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(utcTime.getDate()).padStart(2, '0');
 
     // Extract time components
-    const hours = String(eventDate.getHours()).padStart(2, '0');
-    const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+    const hours = String(utcTime.getHours()).padStart(2, '0');
+    const minutes = String(utcTime.getMinutes()).padStart(2, '0');
 
     // Format for date input (YYYY-MM-DD)
     const dateValue = `${year}-${month}-${day}`;
@@ -226,12 +227,20 @@ function load_calendar() {
       if (group_permission !== 'Viewer') {
         document.getElementById("modal-view-add-participant-select").style.display = 'flex';
         document.getElementById("modalCloseViewEvent").style.display = 'none';
+        document.getElementById('view-event-start-date').readOnly = false;
+        document.getElementById('view-event-start-time').readOnly = false;
+        document.getElementById('view-event-end-date').readOnly = false;
+        document.getElementById('view-event-end-time').readOnly = false;
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
       }
       else {
         document.getElementById("modal-view-add-participant-select").style.display = 'none';
         document.getElementById("modalCloseViewEvent").style.display = 'block';
+        document.getElementById('view-event-start-date').readOnly = true;
+        document.getElementById('view-event-start-time').readOnly = true;
+        document.getElementById('view-event-end-date').readOnly = true;
+        document.getElementById('view-event-end-time').readOnly = true;
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
       }
@@ -241,6 +250,10 @@ function load_calendar() {
         document.getElementById("participants-section").style.display = 'block';
         setupParticipantsSection(info, modal, 'Viewer');
         document.getElementById("modal-view-add-participant-select").style.display = 'none';
+        document.getElementById('view-event-start-date').readOnly = true;
+        document.getElementById('view-event-start-time').readOnly = true;
+        document.getElementById('view-event-end-date').readOnly = true;
+        document.getElementById('view-event-end-time').readOnly = true;
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
         document.getElementById("modalCloseViewEvent").style.display = 'block';
@@ -248,6 +261,10 @@ function load_calendar() {
       else {
         document.getElementById("participants-section").style.display = 'none';
         document.getElementById("modal-view-add-participant-select").style.display = 'none';
+        document.getElementById('view-event-start-date').readOnly = false;
+        document.getElementById('view-event-start-time').readOnly = false;
+        document.getElementById('view-event-end-date').readOnly = false;
+        document.getElementById('view-event-end-time').readOnly = false;
         document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'true');
         document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'true');
         document.getElementById("modalCloseViewEvent").style.display = 'none';
@@ -445,22 +462,10 @@ function load_calendar() {
     externalDiv.appendChild(participantElement);
   }
 
-  function convertToISO(dateInput, timeInput) {
+  function getDateTime(dateInput, timeInput) {
     // Combine date and time strings
     const dateTimeString = `${dateInput}T${timeInput}`;
-
-    // Create Date object (this will be in local timezone)
-    const dateObj = new Date(dateTimeString);
-
-    // Check if the date is valid
-    if (isNaN(dateObj.getTime())) {
-      throw new Error('Invalid date or time input');
-    }
-
-    // Convert to ISO string and remove milliseconds and timezone
-    const isoString = dateObj.toISOString().replace(/\.\d{3}Z$/, '');
-
-    return isoString;
+    return dateTimeString;
   }
 
   function saveViewEvent(event) {
@@ -468,30 +473,14 @@ function load_calendar() {
 
     // Get values from HTML inputs
     const startDateValue = document.getElementById('view-event-start-date').value; // e.g., "2025-04-08"
-    const startTimeValue = document.getElementById('view-event-start-time').value; // e.g., "05:30"
+    const startTimeValue = document.getElementById('view-event-start-time').value; // e.g., "05:30" in 24-hour format
 
     // Get values from HTML inputs
     const endDateValue = document.getElementById('view-event-end-date').value; // e.g., "2025-04-08"
-    const endTimeValue = document.getElementById('view-event-end-time').value; // e.g., "05:30"
+    const endTimeValue = document.getElementById('view-event-end-time').value; // e.g., "05:30" in 24-hour format
 
-    var eventStart;
-    try {
-      eventStart = convertToISO(startDateValue, startTimeValue);
-    }
-    catch (error) {
-      console.error(error.message);
-      return;
-    }
-    console.log(eventStart);
-
-    var eventEnd;
-    try {
-      eventEnd = convertToISO(endDateValue, endTimeValue);
-    }
-    catch (error) {
-      console.error(error.message);
-      return;
-    }
+    const eventStart = getDateTime(startDateValue, startTimeValue);
+    const eventEnd = getDateTime(endDateValue, endTimeValue);
 
     const description = document.getElementById("model-view-description-editable").innerText.trim();
 
@@ -503,22 +492,35 @@ function load_calendar() {
     if (!eventTitle) {
       showError('model-view-title-editable', 'Event title is required');
       isValid = false;
+      return;
     }
 
-    // if (!eventStart) {
-    //   showError('eventStart', 'Start time is required');
-    //   isValid = false;
-    // }
-
-    // if (!eventEnd) {
-    //   showError('eventEnd', 'End time is required');
-    //   isValid = false;
-    // } 
-
-    // if (eventStart && new Date(eventStart) >= new Date(eventEnd)) {
-    //   showError('eventEnd', 'End time must be after start time');
-    //   isValid = false;
-    // }
+    const sdate = new Date(eventStart);
+    const edate = new Date(eventEnd);
+    // Extract year, month, and day for each date
+    const d1 = new Date(sdate.getFullYear(), sdate.getMonth(), sdate.getDate());
+    const d2 = new Date(edate.getFullYear(), edate.getMonth(), edate.getDate());
+    if (d1 > d2) {
+      showError('view-event-end-date', 'End Date must be after start Date');
+      isValid = false;
+      return;
+    }
+    else if (d1 < d2) {
+    }
+    else {
+      if (sdate.getHours() > edate.getHours()) {
+        showError('view-event-end-time', 'End time must be after start time');
+        isValid = false;
+        return;
+      }
+      else if (sdate.getHours() === edate.getHours()) {
+        if (sdate.getMinutes() >= edate.getMinutes()) {
+          showError('view-event-end-time', 'End time must be after start time');
+          isValid = false;
+          return;
+        }
+      }
+    }
 
     if (isValid) {
       $('#modal-view-event').modal('hide');

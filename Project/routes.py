@@ -357,6 +357,7 @@ def return_data(group_id):
             if event.end_time.tzinfo is None:
                 local_end_time = event.end_time.replace(tzinfo=timezone.utc)
                 local_end_time = local_end_time.astimezone()
+            
             if event.group_id == 1:
                 events_data.append({
                 'event_id': event.event_id,
@@ -810,51 +811,51 @@ def update_event(event_id):
     event.description = new_event['description']
     event.start_time = datetime.fromisoformat(new_event['start'])
     event.end_time = datetime.fromisoformat(new_event['end'])
-    print(event.start_time)
     
-    accepted_participants = []
-    declined_participants = []
-    pending_participants = []
-    
-    for participant in event.participations:
-        if participant.status == 'Accepted':
-            accepted_participants.append(participant)
-        elif participant.status == 'Declined':
-            declined_participants.append(participant)
-        else:
-            pending_participants.append(participant)
-    
-    new_accepted_participants_email = []
-    for element in new_event['accepted_participants']:
-        new_accepted_participants_email.append(element['email'])
-    new_declined_participants_email = []
-    for element in new_event['declined_participants']:
-        new_declined_participants_email.append(element['email'])
-    new_pending_participants_email = []
-    for element in new_event['pending_participants']:
-        new_pending_participants_email.append(element['email'])
-            
-    # Update Accpeted participants for the event
-    for participant in accepted_participants:
-        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
-        if participant_email not in new_accepted_participants_email:
+    if event.group_id != 1:
+        accepted_participants = []
+        declined_participants = []
+        pending_participants = []
+        
+        for participant in event.participations:
+            if participant.status == 'Accepted':
+                accepted_participants.append(participant)
+            elif participant.status == 'Declined':
+                declined_participants.append(participant)
+            else:
+                pending_participants.append(participant)
+        
+        new_accepted_participants_email = []
+        for element in new_event['accepted_participants']:
+            new_accepted_participants_email.append(element['email'])
+        new_declined_participants_email = []
+        for element in new_event['declined_participants']:
+            new_declined_participants_email.append(element['email'])
+        new_pending_participants_email = []
+        for element in new_event['pending_participants']:
+            new_pending_participants_email.append(element['email'])
+                
+        # Update Accpeted participants for the event
+        for participant in accepted_participants:
+            participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+            if participant_email not in new_accepted_participants_email:
+                db.session.delete(participant)
+                
+        # Update Declined participants for the event
+        for participant in declined_participants:
+            participant_email = User.query.filter_by(user_id=participant.user_id).first().email
+            if participant_email not in new_declined_participants_email:
+                db.session.delete(participant)
+        
+        # Update Pending participants for the event
+        for participant in pending_participants: 
             db.session.delete(participant)
-            
-    # Update Declined participants for the event
-    for participant in declined_participants:
-        participant_email = User.query.filter_by(user_id=participant.user_id).first().email
-        if participant_email not in new_declined_participants_email:
-            db.session.delete(participant)
-    
-    # Update Pending participants for the event
-    for participant in pending_participants: 
-        db.session.delete(participant)
-    
-    for participant_email in new_pending_participants_email:
-        participant = Participate()
-        participant.user_id = User.query.filter_by(email=participant_email.lower()).first().user_id
-        participant.event_id = event_id
-        db.session.add(participant)
+        
+        for participant_email in new_pending_participants_email:
+            participant = Participate()
+            participant.user_id = User.query.filter_by(email=participant_email.lower()).first().user_id
+            participant.event_id = event_id
+            db.session.add(participant)
     
     try:
         db.session.commit() 
