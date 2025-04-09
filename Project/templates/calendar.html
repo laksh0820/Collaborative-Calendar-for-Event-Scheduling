@@ -57,7 +57,6 @@
 					<span className="icon"><i class="bx bx-calendar"></i></span>
 					<div class="event-body" id="model-view-description-editable" contenteditable="true"
 						style="margin-left: 5px; max-width: 95%; min-width: 95%; overflow-wrap: break-word; white-space: pre-wrap;"
-						onkeydown="if(event.key === 'Enter') { document.execCommand('insertHTML', false, '<br>'); event.preventDefault(); }"
 						onfocus="this.textContent === 'No description available' && (this.textContent = '')"
 						onblur="!this.textContent.trim() && (this.textContent = 'No description available')"></div>
 				</div>

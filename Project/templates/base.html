@@ -63,8 +63,13 @@
         {% else %}
         <a href="{{ url_for('check_invites') }}">
         {% endif %}
-          <i class="bx bx-envelope"></i>
-          <span class="links_name">Invites</span>
+          <i class="bx bx-envelope">
+            <span class="translate-middle badge rounded-pill bg-danger d-none" id="inviteBadge">
+              20 
+              <span class="visually-hidden">pending invites</span>
+            </span>
+          </i>
+          <span class="links_name" id="invite-link-span">Invites</span>
         </a>
         <span class="tooltip">Invites</span>
       </li>

@@ -30,20 +30,24 @@ function getAvatarColor(name) {
 }
 
 // Function to cleanup the calendar Resources
-function cleanupResources() {
-  // Remove all event listeners
-  calendarResources.modalListeners.forEach(({ element, event, handler }) => {
-    if (element instanceof jQuery) {
-      element.off(event, handler);
-    } else if (element instanceof Element) {
-      element.removeEventListener(event, handler);
-    }
-  });
-  calendarResources.modalListeners = [];
+function cleanupResources(arg) {
+  if (arg === 'all' || arg === 'modal') {
+    // Remove all event listeners
+    calendarResources.modalListeners.forEach(({ element, event, handler }) => {
+      if (element instanceof jQuery) {
+        element.off(event, handler);
+      } else if (element instanceof Element) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    calendarResources.modalListeners = [];
+  }
 
   // Destroy all tooltips
-  calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
-  calendarResources.tooltips = [];
+  if (arg === 'all' || arg === 'tooltip') {
+    calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
+    calendarResources.tooltips = [];
+  }
 }
 
 // Function to show Flash Messages
@@ -107,7 +111,9 @@ function load_calendar() {
         tooltip = new bootstrap.Tooltip(info.el, {
           title: info.event.extendedProps.description,
           placement: 'top',
-          trigger: 'hover'
+          trigger: 'hover',
+          html: true,
+          customClass: 'multiline-tooltip'
         });
         calendarResources.tooltips.push(tooltip);
       }
@@ -171,7 +177,7 @@ function load_calendar() {
   // Group selection change handler
   document.getElementById('group-select').addEventListener('change', function () {
     calendar.removeAllEvents();
-    cleanupResources();
+    cleanupResources("all");
     calendar.refetchEvents();
   });
 
@@ -210,11 +216,12 @@ function load_calendar() {
 
   // Event modal functions
   function showEventModal(info) {
+    cleanupResources("modal");
     const modal = new bootstrap.Modal('#modal-view-event');
     $('.event-title').text(info.event.title);
     $('.event-body').html(
       info.event.extendedProps?.description ||
-      '<span class="no-description">No description</span>'
+      'No description available'
     );
 
     setDateTime(info.event.start, "start-datetime");
@@ -540,7 +547,7 @@ function load_calendar() {
         }),
         success: function (response) {
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
           showFlashMessage(response.status, response.message);
         },
@@ -581,6 +588,7 @@ function load_calendar() {
   }
 
   function prepareEventCreationModal(group_id, arg) {
+    cleanupResources("modal");
     if (group_id == 1) {
       document.getElementById('participants').style.display = 'none';
     } else {
@@ -665,7 +673,7 @@ function load_calendar() {
         }),
         success: function (response) {
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
           showFlashMessage(response.status, response.message);
         },
@@ -1090,7 +1098,7 @@ function load_calendar() {
               });
 
               calendar.removeAllEvents();
-              cleanupResources();
+              cleanupResources("all");
               calendar.refetchEvents();
 
               fetch_unread_notifications_count();   // Refresh the notification count
@@ -1102,7 +1110,7 @@ function load_calendar() {
 
           // Refresh the events
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
 
           // Remove the invite from view
@@ -1575,7 +1583,7 @@ function load_calendar() {
           select.val(groupId);
 
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
         },
         error: function () {
@@ -1630,6 +1638,7 @@ const notificationBadge = document.getElementById('notificationBadge');
 // Fetch number of unread notifications on page load
 document.addEventListener('DOMContentLoaded', function () {
   fetch_unread_notifications_count();
+  fetch_pending_invites_count(); // Fetch pending invites count
 });
 
 // Toggle notification popover
@@ -1673,6 +1682,42 @@ document.addEventListener('click', (e) => {
     }, 300);
   }
 });
+
+
+// Fetch pending invites count
+function fetch_pending_invites_count() {
+  $.ajax({
+    url: '/check_invites',
+    type: 'GET',
+    success: function (response) {
+      const pendingCount = response.length;
+      const pendingInvitesBadge = document.getElementById('inviteBadge');
+      const icon = document.querySelector('.sidebar ul li .bx.bx-envelope::before');
+      console.log(icon);
+      const invite_link_span = document.getElementById('invite-link-span');
+      console.log(invite_link_span);
+      if (pendingCount > 0) {
+        pendingInvitesBadge.textContent = pendingCount;
+        if (pendingInvitesBadge.classList.contains('d-none')) pendingInvitesBadge.classList.remove('d-none');
+        icon.style.setProperty("padding-left", "11px");
+        console.log(icon.style.paddingLeft);
+        invite_link_span.style.setProperty("margin-left", "0px");
+        console.log(invite_link_span.style.marginLeft);
+      } 
+      else {
+        pendingInvitesBadge.textContent = 0;
+        if (!pendingInvitesBadge.classList.contains('d-none')) pendingInvitesBadge.classList.add('d-none');
+        icon.style.setProperty("padding-left", "initial");
+        console.log(icon.style.paddingLeft);
+        invite_link_span.style.setProperty("margin-left", "11px");
+        console.log(invite_link_span.style.marginLeft);
+      }
+    },
+    error: function () {
+      console.error('Error fetching pending invites count');
+    }
+  });
+}
 
 // Fetch unread notifications count
 function fetch_unread_notifications_count() {

@@ -206,12 +206,20 @@ body {
   text-align: center;
 }
 
+.sidebar ul li .bx.bx-envelope::before {
+  padding-left: 11px;
+}
+
 .sidebar .links_name {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease 0.2s;
-  margin-left: 10px;
+  margin-left: 11px;
   white-space: nowrap;
+}
+
+.sidebar #invite-link-span {
+  margin-left: 0px;
 }
 
 .sidebar.active .links_name {

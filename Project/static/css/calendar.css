@@ -20,6 +20,10 @@ body {
   z-index: 9999999 !important;
 }
 
+.multiline-tooltip .tooltip-inner {
+  white-space: pre-wrap;
+}
+
 /*!
  * FullCalendar v3.9.0
  * Docs & License: https://fullcalendar.io/
