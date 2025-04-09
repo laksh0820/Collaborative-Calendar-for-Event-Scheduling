@@ -206,20 +206,20 @@ body {
   text-align: center;
 }
 
-.sidebar ul li .bx.bx-envelope::before {
-  padding-left: 11px;
+.sidebar ul li .bx.bx-envelope.active::before {
+  padding-left: 15px;
 }
 
 .sidebar .links_name {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease 0.2s;
-  margin-left: 11px;
+  margin-left: 15px;
   white-space: nowrap;
 }
 
-.sidebar #invite-link-span {
-  margin-left: 0px;
+.bx.bx-envelope.active + #invite-link-span {
+  margin-left: 5px;
 }
 
 .sidebar.active .links_name {

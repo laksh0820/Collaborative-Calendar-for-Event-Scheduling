@@ -108,8 +108,10 @@ function load_calendar() {
         if (tooltip) {
           tooltip.dispose(); // Dispose of the existing tooltip instance
         }
+
+        let desc = info.event.extendedProps.description;
         tooltip = new bootstrap.Tooltip(info.el, {
-          title: info.event.extendedProps.description,
+          title: desc.length > 200 ? desc.substring(0, 200) + '...' : desc,
           placement: 'top',
           trigger: 'hover',
           html: true,
@@ -217,6 +219,7 @@ function load_calendar() {
   // Event modal functions
   function showEventModal(info) {
     cleanupResources("modal");
+    fetch_pending_invites_count();
     const modal = new bootstrap.Modal('#modal-view-event');
     $('.event-title').text(info.event.title);
     $('.event-body').html(
@@ -1102,6 +1105,7 @@ function load_calendar() {
               calendar.refetchEvents();
 
               fetch_unread_notifications_count();   // Refresh the notification count
+              fetch_pending_invites_count(); // Refresh the invite count
             },
             error: function () {
               $('#group-select').html('<option value="" disabled>Error loading groups</option>');
@@ -1692,25 +1696,20 @@ function fetch_pending_invites_count() {
     success: function (response) {
       const pendingCount = response.length;
       const pendingInvitesBadge = document.getElementById('inviteBadge');
-      const icon = document.querySelector('.sidebar ul li .bx.bx-envelope::before');
-      console.log(icon);
-      const invite_link_span = document.getElementById('invite-link-span');
-      console.log(invite_link_span);
+      const invites_icon = document.getElementById('invites-icon');
       if (pendingCount > 0) {
         pendingInvitesBadge.textContent = pendingCount;
-        if (pendingInvitesBadge.classList.contains('d-none')) pendingInvitesBadge.classList.remove('d-none');
-        icon.style.setProperty("padding-left", "11px");
-        console.log(icon.style.paddingLeft);
-        invite_link_span.style.setProperty("margin-left", "0px");
-        console.log(invite_link_span.style.marginLeft);
+        if (pendingInvitesBadge.classList.contains('d-none')) {
+          pendingInvitesBadge.classList.remove('d-none');
+          invites_icon.classList.add('active');
+        }
       } 
       else {
         pendingInvitesBadge.textContent = 0;
-        if (!pendingInvitesBadge.classList.contains('d-none')) pendingInvitesBadge.classList.add('d-none');
-        icon.style.setProperty("padding-left", "initial");
-        console.log(icon.style.paddingLeft);
-        invite_link_span.style.setProperty("margin-left", "11px");
-        console.log(invite_link_span.style.marginLeft);
+        if (!pendingInvitesBadge.classList.contains('d-none')) {
+          pendingInvitesBadge.classList.add('d-none');
+          invites_icon.classList.remove('active');
+        }
       }
     },
     error: function () {
@@ -1741,6 +1740,7 @@ function fetch_unread_notifications_count() {
           notificationBadge.classList.add('d-none');
         }
       }
+      console.log(unreadCount);
     },
     error: function () {
       console.error('Error fetching notifications count');
