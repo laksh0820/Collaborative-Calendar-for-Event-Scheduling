@@ -148,6 +148,42 @@ def create_group():
     
         return jsonify({'emails': invalid_emails}), 200
 
+# To get the number of pending invites for the user
+@app.route('/get_pending_invites_count', methods=['GET'])
+@login_required
+def get_pending_invites_count():
+    group_invites = (
+        db.session.query(Member.member_id, Group.group_name, Group.description)
+        .join(Member.group)
+        .filter(
+            Member.user_id == current_user.user_id,
+            Member.status == 'Pending'
+        )
+        .all()
+    )
+
+    event_invites = (
+        db.session.query(
+            Participate.participate_id,
+            Event.event_name,
+            Event.description,
+            Event.start_time,
+            Event.end_time,
+            User.name,
+            Group.group_name
+        )
+        .join(Participate.event)
+        .join(Event.event_creator)
+        .join(Event.host_group)
+        .filter(
+            Participate.user_id == current_user.user_id,
+            Participate.status == 'Pending'
+        )
+        .all()
+    )
+
+    return jsonify(len(group_invites) + len(event_invites)) 
+
 # Group and Event Invites
 @app.route('/check_invites',methods=['GET','POST'])
 @login_required
@@ -224,6 +260,34 @@ def check_invites():
             db.session.rollback()
             return "Unable to edit invite status", 500
         return jsonify(success=True)
+
+# To get the number of unread notifications for the user
+@app.route('/get_unread_notifications_count', methods=['GET'])
+@login_required
+def get_unread_notifications_count():
+    # For groups
+    unread_groups = (
+        db.session.query(Group.group_id, Group.group_name, Member.invite_time)
+        .join(Member.group)
+        .filter(
+            Member.read_status == 'Unread',
+            Member.user_id == current_user.user_id
+        )
+        .all()
+    )
+
+    # For events
+    unread_events = (
+        db.session.query(Participate.event_id, Event.event_name, Participate.invite_time)
+        .join(Participate.event)
+        .filter(
+            Participate.read_status == 'Unread',
+            Participate.user_id == current_user.user_id
+        )
+        .all()
+    )
+
+    return jsonify(len(unread_groups) + len(unread_events))
 
 # To get the notifications for the user
 @app.route('/get_notifications', methods=['GET', 'POST'])

@@ -1691,10 +1691,10 @@ document.addEventListener('click', (e) => {
 // Fetch pending invites count
 function fetch_pending_invites_count() {
   $.ajax({
-    url: '/check_invites',
+    url: '/get_pending_invites_count',
     type: 'GET',
     success: function (response) {
-      const pendingCount = response.length;
+      const pendingCount = response;
       const pendingInvitesBadge = document.getElementById('inviteBadge');
       const invites_icon = document.getElementById('invites-icon');
       if (pendingCount > 0) {
@@ -1724,10 +1724,10 @@ function fetch_unread_notifications_count() {
   if (notificationBadge === null) return;
 
   $.ajax({
-    url: '/get_notifications',
+    url: '/get_unread_notifications_count',
     type: 'GET',
     success: function (response) {
-      const unreadCount = response.length;
+      const unreadCount = response;
       notificationBadge.textContent = unreadCount;
       if (unreadCount > 0) {
         // Show the badge if there are unread notifications
