@@ -147,7 +147,7 @@ def create_group():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add new group to the database", 500
+            return jsonify({'error': "Unable to add new group to the database"}), 500
     
         return jsonify({'emails': invalid_emails}), 200
 
@@ -253,7 +253,7 @@ def check_invites():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to edit invite status", 500
+            return jsonify({'error': "Unable to edit invite status"}), 500
         return jsonify({'group_id':f'{group_id}'}), 200
 
 # To get the number of unread notifications for the user
@@ -352,7 +352,7 @@ def get_notifications():
             return jsonify(success=True)
         except:
             db.session.rollback()
-            return "Unable to edit read status", 500
+            return jsonify({'error': "Unable to edit read status"}), 500
 
 # To get the groups for group-select
 @app.route('/get_groups')
@@ -414,7 +414,7 @@ def return_data(group_id):
                 db.session.commit()
             except:
                 db.session.rollback()
-                return "Unable to add group 1 to the database", 500
+                return jsonify({'error': "Unable to add group 1 to the database"}), 500
         
         # Get all the events from the database created by current user
         events_data = []
@@ -947,7 +947,7 @@ def get_info(group_id):
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to delete group from the database", 500
+            return jsonify({'error': "Unable to delete group from the database"}), 500
         return jsonify(success=True)
 
     else:
@@ -1004,7 +1004,7 @@ def get_info(group_id):
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to update group info", 500
+            return jsonify({'error': "Unable to update group info"}), 500
         return jsonify({'emails': invalid_emails}), 200
 
 # To get the group permission info
@@ -1030,7 +1030,7 @@ def add_event():
             return jsonify({'error': 'Access denied'}), 403
         permission = mem.permission
         if permission == 'Viewer':
-            return jsonify({'status': 'error','message': 'Permission denied'}), 403
+            return jsonify({'error': 'Permission denied'}), 403
      
     newEvent = Event(
         event_name = event['title'],
@@ -1061,7 +1061,7 @@ def add_event():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add event to the database", 500
+            return jsonify({'error': "Unable to add event to the database"}), 500
    
     try:
         db.session.add(newEvent)
@@ -1081,18 +1081,18 @@ def add_event():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add the participants", 500
+            return jsonify({'error': "Unable to add participants"}), 500
     except:
-        return "Unable to add event to the database", 500
+        return jsonify({'error': "Unable to add event to the database"}), 500
     
-    return jsonify({'status': 'success', 'message':'Event added successfully'}), 200
+    return jsonify({'message':'Event added successfully'}), 200
 
 @app.route('/remove_event/<int:event_id>', methods=['DELETE'])
 @login_required
 def remove_event(event_id):
     event = Event.query.get(event_id)
     if not event:
-        return jsonify({'status': 'error', 'message' : 'Event not found'}), 404
+        return jsonify({'error' : 'Event not found'}), 404
 
     if event.group_id != 1:
         # Check if the user has the permission to add the event
@@ -1101,7 +1101,7 @@ def remove_event(event_id):
             return jsonify({'error': 'Access denied'}), 403
         permission = mem.permission
         if permission == 'Viewer':
-            return jsonify({'status': 'error','message': 'Permission denied'}), 200
+            return jsonify({'error': 'Permission denied'}), 403
 
     try:
         Participate.query.filter(
@@ -1111,11 +1111,11 @@ def remove_event(event_id):
         db.session.delete(event)
         
         db.session.commit()
-        return jsonify({'status' : 'success', 'message': 'Event deleted successfully'}), 200
+        return jsonify({'message': 'Event deleted successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status' : 'error', 'message': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/update_event/<int:event_id>', methods=['PUT'])
@@ -1125,7 +1125,7 @@ def update_event(event_id):
     
     event = Event.query.filter_by(event_id=event_id).first()
     if not event:
-        return jsonify({'status': 'error', 'message' : 'Event not found'}), 404
+        return jsonify({'error' : 'Event not found'}), 404
     
     if event.group_id != 1:
         # Check if the user has the permission to add the event
@@ -1134,7 +1134,7 @@ def update_event(event_id):
             return jsonify({'error': 'Access denied'}), 403
         permission = mem.permission
         if permission == 'Viewer':
-            return jsonify({'status': 'error','message': 'Permission denied'}), 200
+            return jsonify({'error': 'Permission denied'}), 403
         
     event.event_name = new_event['title']
     event.description = new_event['description']
@@ -1189,8 +1189,8 @@ def update_event(event_id):
     
     try:
         db.session.commit() 
-        return jsonify({'status' : 'success', 'message': 'Event updated successfully'}), 200
+        return jsonify({'message': 'Event updated successfully'}), 200
     
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status': 'error', 'message' : str(e)}), 500
+        return jsonify({'error' : str(e)}), 500

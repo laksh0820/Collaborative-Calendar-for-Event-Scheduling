@@ -56,7 +56,6 @@ const calendarCache = {
 
       // Filter out the event to be removed
       const updatedEvents = data.filter(event => event.event_id !== eventId);
-      console.log(updatedEvents);
 
       // Only update cache if something was actually removed
       if (updatedEvents.length !== data.length) {
@@ -223,8 +222,11 @@ function load_calendar() {
             events: versionMap
           })
         })
-          .then(response => response.json())
-          .then(updates => {
+          .then(async(response) => {
+            const updates = await response.json();
+            if (!response.ok) {
+              throw new Error(updates.error);
+            }
             // 3. Merge updates with cache
 
             // Create a copy of cached data to modify
@@ -251,19 +253,24 @@ function load_calendar() {
             successCallback(mergedData);
           })
           .catch(error => {
-            console.error('Update check failed, using cached data', error);
+            showFlashMessage('error', error.message);
           });
         return;
       }
 
       fetch(`/data/${group_id}`)
-        .then(response => response.json())
-        .then(data => {
-          // Store in cache
+        .then(async(response) => {
+          const data = await response.json();
+          if (!response.ok) { 
+            throw new Error(data.error);
+          }
           calendarCache.set(group_id, data);
           successCallback(data);
         })
-        .catch(error => failureCallback(error));
+        .catch(error => {
+          showFlashMessage('error', error.message);
+          failureCallback(error);
+        });
     },
     eventClick: function (info) {
       // Check if there exists an HTML element with class name 'fc-more-popover'
@@ -295,11 +302,11 @@ function load_calendar() {
           url: `/get_group_permission/${group_id}`,
           type: "GET",
           contentType: "application/json",
-          success: function (respone) {
-            permission = respone.premission
+          success: function (response) {
+            permission = response.permission
           },
-          error: function () {
-            showFlashMessage('error', 'Some error occurred');
+          error: function (response) {
+            showFlashMessage('error', response.error);
           }
         });
       }
@@ -694,10 +701,10 @@ function load_calendar() {
           calendar.removeAllEvents();
           cleanupResources("all");
           calendar.refetchEvents();
-          showFlashMessage(response.status, response.message);
+          showFlashMessage('success', response.message);
         },
-        error: function () {
-          showFlashMessage('error', 'Error updating event');
+        error: function (response) {
+          showFlashMessage('error', response.error);
         }
       });
     }
@@ -721,10 +728,10 @@ function load_calendar() {
           calendarCache.clearEvent(group_id, event_id);
           event.remove();
         }
-        showFlashMessage(response.status, response.message);
+        showFlashMessage('success', response.message);
       },
-      error: function () {
-        showFlashMessage('error', 'Error Removing event');
+      error: function (response) {
+        showFlashMessage('error', response.error);
       }
     });
   }
@@ -834,10 +841,10 @@ function load_calendar() {
           calendar.removeAllEvents();
           cleanupResources("all");
           calendar.refetchEvents();
-          showFlashMessage(response.status, response.message);
+          showFlashMessage('success', response.message);
         },
-        error: function () {
-          showFlashMessage('error', 'Error adding event');
+        error: function (response) {
+          showFlashMessage('error', response.error);
         }
       });
     }
@@ -1317,7 +1324,7 @@ function load_calendar() {
           }, 1000);
         },
         error: function (response) {
-          alert('Error processing your response. Please try again.');
+          showFlashMessage('error', response.error);
         }
       });
     }
@@ -1397,7 +1404,9 @@ function load_calendar() {
 
         createAndShowModal(isAdmin, groupId);
       },
-      error: () => showFlashMessage('error', 'Failed to fetch group data')
+      error: function (response) {
+        showFlashMessage('error', response.error);
+      }
     });
 
     // Create modal HTML
@@ -1575,7 +1584,9 @@ function load_calendar() {
                 showFlashMessage('success', 'Group deleted successfully');
                 refreshGroupList(1);
               },
-              error: () => showFlashMessage('error', 'Failed to delete group')
+              error: function (response) {
+                showFlashMessage('error', response.error);
+              }
             });
           }
         });
@@ -1734,7 +1745,9 @@ function load_calendar() {
             calendar.refetchEvents();
           }
         },
-        error: () => showFlashMessage('error', 'Failed to update group')
+        error: function (response) {
+          showFlashMessage('error', response.error);
+        }
       });
     }
 
@@ -1882,7 +1895,7 @@ function fetch_pending_invites_count() {
       }
     },
     error: function () {
-      console.error('Error fetching pending invites count');
+      showFlashMessage('error', 'Error fetching pending invites count');
     }
   });
 }
@@ -1911,7 +1924,7 @@ function fetch_unread_notifications_count() {
       }
     },
     error: function () {
-      console.error('Error fetching notifications count');
+      showFlashMessage('error', 'Error fetching notifications count');
     }
   });
 }
@@ -1990,7 +2003,7 @@ function get_notifications() {
               updateNotificationCount(); // Update the notification count
             },
             error: function () {
-              console.error('Error marking notification as read');
+              showFlashMessage('error', 'Error marking notification as read');
             }
           });
         });
@@ -2004,7 +2017,7 @@ function get_notifications() {
       });
     },
     error: function () {
-      alert('Error loading notifications. Please try again later.');
+      showFlashMessage('error', 'Error loading notifications. Please try again later.');
     },
   });
 
@@ -2252,7 +2265,7 @@ function create_group() {
           alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
       },
       error: function (response) {
-        alert('Group Form Submission error');
+        showFlashMessage('error', response.error);
       }
     });
 
