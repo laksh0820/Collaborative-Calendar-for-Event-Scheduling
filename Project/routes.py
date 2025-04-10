@@ -642,7 +642,6 @@ def return_data(group_id):
 def return_update_data(group_id):
     versionMap = request.get_json()
     
-    print(versionMap['events'])
     cached_events = []
     for element in versionMap['events']:
         cached_events.append(element['event_id'])
@@ -869,7 +868,6 @@ def return_update_data(group_id):
                     'version':event.version_number
                 })
     
-    print(events_data)
     return jsonify(events_data)
 
 # To get the members of the group

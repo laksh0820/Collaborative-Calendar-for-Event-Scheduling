@@ -204,8 +204,6 @@ function load_calendar() {
       if (cachedObj) {
         const cachedData = cachedObj.data;
 
-        console.log("Before", cachedData);
-
         // Immediately show cached data while updating
         successCallback(cachedData);
 
@@ -232,8 +230,6 @@ function load_calendar() {
             // Create a copy of cached data to modify
             const mergedData = [...cachedData];
 
-            console.log("updates", updates);
-
             // Process updates
             updates.forEach(update => {
               const existingIndex = mergedData.findIndex(e => e.event_id === update.event_id);
@@ -249,8 +245,6 @@ function load_calendar() {
                 mergedData.push(update);
               }
             });
-
-            console.log("After", mergedData);
 
             // 4. Update cache and callback
             calendarCache.set(group_id, mergedData, cachedObj.ttl);
@@ -1263,13 +1257,13 @@ function load_calendar() {
                   );
                 });
 
-              fetch_unread_notifications_count();   // Refresh the notification count
-              fetch_pending_invites_count(); // Refresh the invite count
-            },
-            error: function () {
-              $('#group-select').html('<option value="" disabled>Error loading groups</option>');
-            }
-          });
+                fetch_unread_notifications_count();   // Refresh the notification count
+                fetch_pending_invites_count(); // Refresh the invite count
+              },
+              error: function () {
+                $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+              }
+            });
           }
           else {
             // Event invites accepted / rejected
@@ -1874,7 +1868,7 @@ function fetch_pending_invites_count() {
           pendingInvitesBadge.classList.remove('d-none');
           invites_icon.classList.add('active');
         }
-      } 
+      }
       else {
         pendingInvitesBadge.textContent = 0;
         if (!pendingInvitesBadge.classList.contains('d-none')) {
