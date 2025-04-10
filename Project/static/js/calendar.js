@@ -1377,6 +1377,9 @@ function load_calendar() {
         error: function (response) {
           const errorResponse = JSON.parse(response.responseText);
           showFlashMessage('error', errorResponse.error);
+          modal.hide();
+          fetch_unread_notifications_count();   // Refresh the notification count
+          fetch_pending_invites_count(); // Refresh the invite count
         }
       });
     }
@@ -1642,6 +1645,7 @@ function load_calendar() {
               error: function (response) {
                 const errorResponse = JSON.parse(response.responseText);
                 showFlashMessage('error', errorResponse.error);
+                modal.hide();
               }
             });
           }
@@ -1805,6 +1809,7 @@ function load_calendar() {
         error: function (response) {
           const errorResponse = JSON.parse(response.responseText);
           showFlashMessage('error', errorResponse.error);
+          $('#modal-edit-group').modal('hide');
         }
       });
     }

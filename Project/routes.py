@@ -797,6 +797,12 @@ def return_update_data(group_id):
         group = Group.query.filter_by(group_id=group_id).first()
         if not group:
             return jsonify({'error': 'Group not found'}), 404
+        
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+        permission = mem.permission
+        
         events = group.events
     
         events_data = [] # To store new and updated events
@@ -813,41 +819,40 @@ def return_update_data(group_id):
                 
         for event in events:
             if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
-                permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
-                
                 users = (
-                    db.session.query()
-                    .select_from(User)
-                    .join(Participate, User.user_id == Participate.user_id)
+                    db.session.query(User.name, User.email)
+                    .join(User.participations)
                     .filter(Participate.event_id == event.event_id)
-                    .add_columns(User.name,User.email)
                     .all()
                 )
                 
                 accepted_users = (
-                    db.session.query()
-                    .select_from(User)
-                    .join(Participate, User.user_id == Participate.user_id)
-                    .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
-                    .add_columns(User.name,User.email)
+                    db.session.query(User.name, User.email)
+                    .join(User.participations)
+                    .filter(
+                        Participate.event_id == event.event_id,
+                        Participate.status == 'Accepted'
+                    )
                     .all()
                 )
                 
                 pending_users = (
-                    db.session.query()
-                    .select_from(User)
-                    .join(Participate, User.user_id == Participate.user_id)
-                    .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
-                    .add_columns(User.name,User.email)
+                    db.session.query(User.name, User.email)
+                    .join(User.participations)
+                    .filter(
+                        Participate.event_id == event.event_id,
+                        Participate.status == 'Pending'
+                    )
                     .all()
                 )
                 
                 declined_users = (
-                    db.session.query()
-                    .select_from(User)
-                    .join(Participate, User.user_id == Participate.user_id)
-                    .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
-                    .add_columns(User.name,User.email)
+                    db.session.query(User.name, User.email)
+                    .join(User.participations)
+                    .filter(
+                        Participate.event_id == event.event_id,
+                        Participate.status == 'Declined'
+                    )
                     .all()
                 )
                 
@@ -938,11 +943,14 @@ def get_members(group_id):
 @login_required
 def get_info(group_id):
     group_id = int(group_id)
+    group = Group.query.filter_by(group_id=group_id).first()
+    if not group:
+        return jsonify({'error': 'Group not found'}), 404
     if group_id != 1:
         mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
         if not mem:
             return jsonify({'error': 'Access denied'}), 403
-    group = Group.query.filter_by(group_id=group_id).first()
+        permission = mem.permission
 
     if request.method == 'GET':
         members = (
@@ -956,17 +964,17 @@ def get_info(group_id):
             'role': member.permission
         } for member in members]
 
-        authorization = any(member.user_id == current_user.user_id and member.permission == 'Admin' for member in members)
-
         return jsonify({
             'name': group.group_name,
             'description': group.description,
             'members': members_list,
-            'authorization': authorization,
+            'authorization': permission == 'Admin',
             'curr_email': current_user.email
         })
     
     elif request.method == 'DELETE':
+        if permission != 'Admin':
+            return jsonify({'error': 'Access denied'}), 403
         try:
             Participate.query.filter(
                 Participate.event.has(group_id=group_id)
@@ -984,6 +992,8 @@ def get_info(group_id):
         return jsonify(success=True)
 
     else:
+        if permission != 'Admin':
+            return jsonify({'error': 'Access denied'}), 403
         group_info = request.get_json()
         try:
             # Update basic group info
