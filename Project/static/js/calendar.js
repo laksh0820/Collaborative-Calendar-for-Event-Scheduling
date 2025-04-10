@@ -261,6 +261,10 @@ function load_calendar() {
 
             // 4. Update cache and callback
             calendarCache.set(group_id, mergedData, cachedObj.ttl);
+
+            fetch_unread_notifications_count();   // Refresh the notification count
+            fetch_pending_invites_count(); // Refresh the invite count
+
             successCallback(mergedData);
           })
           .catch(error => {
@@ -276,6 +280,10 @@ function load_calendar() {
             throw new Error(data.error);
           }
           calendarCache.set(group_id, data);
+
+          fetch_unread_notifications_count();   // Refresh the notification count
+          fetch_pending_invites_count(); // Refresh the invite count
+
           successCallback(data);
         })
         .catch(error => {
@@ -371,8 +379,6 @@ function load_calendar() {
   // Event modal functions
   function showEventModal(info) {
     cleanupResources("modal");
-    fetch_unread_notifications_count();
-    fetch_pending_invites_count();
     const modal = new bootstrap.Modal('#modal-view-event');
     $('.event-title').text(info.event.title);
     $('.event-body').html(
