@@ -1698,6 +1698,7 @@ function load_calendar() {
       }
       const email = $('#editMemberInput').val().trim();
       const role = $('#editRoleDropdown').text().trim();
+      const status = 'Pending';
 
       if (!validateEmail(email)) {
         $(`#editMemberInput`).addClass('is-invalid');
@@ -1711,7 +1712,7 @@ function load_calendar() {
         return;
       }
 
-      members.push({ email, role });
+      members.push({ email, role, status });
       $('#editMemberInput').val('');
       renderMembersList();
       checkForChanges();
@@ -1743,6 +1744,7 @@ function load_calendar() {
                           </ul>
                       </div>
                       ` : `<span class="badge bg-secondary ms-2">${member.role}</span>`}
+                      ${(member.status == 'Pending') ? `<span class="badge text-danger opacity-75 ms-2">(${member.status})</span>` : ''}
                   </div>
                   ${(isAdmin && member.email != curr_email) ? `
                   <button class="btn btn-xs btn-outline-danger remove-member" style="line-height: 0.8" data-email="${member.email}">
@@ -1791,8 +1793,8 @@ function load_calendar() {
       const origEmails = new Set(originalData.members.map(m => m.email));
       const currEmails = new Set(members.map(m => m.email));
 
-      const new_members = members.filter(m => !origEmails.has(m.email));
-      const deleted_members = originalData.members.filter(m => !currEmails.has(m.email));
+      const new_members = members.filter(m => !origEmails.has(m.email)).map(m => ({email: m.email, role: m.role}));
+      const deleted_members = originalData.members.filter(m => !currEmails.has(m.email)).map(m => ({email: m.email, role: m.role}));
       const updated_members = originalData.members
         .filter(o => members.some(c => c.email === o.email && c.role !== o.role))
         .map(o => ({

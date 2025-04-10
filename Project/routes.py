@@ -954,14 +954,15 @@ def get_info(group_id):
 
     if request.method == 'GET':
         members = (
-            db.session.query(User.user_id, User.name, User.email, Member.permission)
+            db.session.query(User.email, Member.permission, Member.status)
             .join(User.memberships)
             .filter(Member.group_id == group_id)
             .all()
         )
         members_list = [{
             'email': member.email,
-            'role': member.permission
+            'role': member.permission,
+            'status': member.status
         } for member in members]
 
         return jsonify({
@@ -1207,7 +1208,7 @@ def update_event(event_id):
         for element in new_event['pending_participants']:
             new_pending_participants_email.append(element['email'])
                 
-        # Update Accpeted participants for the event
+        # Update Accepted participants for the event
         for participant in accepted_participants:
             participant_email = User.query.filter_by(user_id=participant.user_id).first().email
             if participant_email not in new_accepted_participants_email:
