@@ -222,7 +222,7 @@ function load_calendar() {
             events: versionMap
           })
         })
-          .then(async(response) => {
+          .then(async (response) => {
             const updates = await response.json();
             if (!response.ok) {
               throw new Error(updates.error);
@@ -259,9 +259,9 @@ function load_calendar() {
       }
 
       fetch(`/data/${group_id}`)
-        .then(async(response) => {
+        .then(async (response) => {
           const data = await response.json();
-          if (!response.ok) { 
+          if (!response.ok) {
             throw new Error(data.error);
           }
           calendarCache.set(group_id, data);
@@ -1582,7 +1582,9 @@ function load_calendar() {
               success: () => {
                 modal.hide();
                 showFlashMessage('success', 'Group deleted successfully');
-                refreshGroupList(1);
+                refreshGroupList(1, true);
+                // Delete the cache of the group events
+                calendarCache.clear(groupId);
               },
               error: function (response) {
                 showFlashMessage('error', response.error);
@@ -1734,12 +1736,13 @@ function load_calendar() {
           checkForChanges();
           renderMembersList();
           if (name_changed) {
-            refreshGroupList(groupId);
+            refreshGroupList(groupId, false);
           }
           if (members_changed) {
             // Clear cache when group changes
             const group_id = document.getElementById('group-select').value;
             calendarCache.clear(group_id);
+            calendarCache.clear(1);
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
@@ -1756,7 +1759,7 @@ function load_calendar() {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function refreshGroupList(groupId) {
+    function refreshGroupList(groupId, refreshEvents) {
       $.ajax({
         url: '/get_groups',
         type: 'GET',
@@ -1773,6 +1776,14 @@ function load_calendar() {
             );
           });
           select.val(groupId);
+
+          if (refreshEvents) {
+            // Refresh the events in dashboard
+            calendarCache.clear(1);
+            calendar.removeAllEvents();
+            cleanupResources("all");
+            calendar.refetchEvents();
+          }
         },
         error: function () {
           $('#group-select').html('<option value="" disabled>Error loading groups</option>');
