@@ -650,10 +650,21 @@ def return_update_data(group_id):
     for element in versionMap['events']:
         cached_events.append(element['event_id'])
     version_map = {item['event_id']: item['version'] for item in versionMap['events']}
-    
+     
     if group_id == 1:
         # Get all the events from the database created by current user
         events_data = []
+        
+        # Get event_id of all the events that are deleted but still available in cache
+        deleted_events = []
+        
+        # Events that are currently have current user as participantion or individual
+        current_user_events = []
+    
+        for event in current_user.created_events:
+            if event.group_id == 1:
+                current_user_events.append(event.event_id)
+        
         for event in current_user.created_events:
             local_start_time = event.start_time.astimezone()
             local_end_time = event.end_time.astimezone()
@@ -683,6 +694,10 @@ def return_update_data(group_id):
             .filter(Participate.user_id == current_user.user_id)
             .all()
         )
+        
+        for event in group_events:
+            current_user_events.append(event.event_id)
+            
         for event in group_events:
             if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
                 users = (
@@ -772,7 +787,11 @@ def return_update_data(group_id):
                     'event_edit_permission': 'Viewer',
                     'version':event.version_number
                 })
-            
+      
+        for cached_event_id in cached_events:
+            if cached_event_id not in current_user_events:
+                deleted_events.append(cached_event_id)
+                      
     else:
         # Get all the events for the group
         group = Group.query.filter_by(group_id=group_id).first()
@@ -780,7 +799,18 @@ def return_update_data(group_id):
             return jsonify({'error': 'Group not found'}), 404
         events = group.events
     
-        events_data = []
+        events_data = [] # To store new and updated events
+        deleted_events = [] # To store events that are deleted but still present in the cache
+        
+        for cached_event_id in cached_events:
+            present = 0
+            for event in events:
+                if cached_event_id == event.event_id:
+                    present = 1
+                    break
+            if present == 0:
+                deleted_events.append(cached_event_id)
+                
         for event in events:
             if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
                 permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
@@ -872,7 +902,10 @@ def return_update_data(group_id):
                     'version':event.version_number
                 })
     
-    return jsonify(events_data)
+    return jsonify({
+        'updated_events': events_data,
+        'deleted_events': deleted_events
+    })
 
 # To get the members of the group
 @app.route('/members/<group_id>')

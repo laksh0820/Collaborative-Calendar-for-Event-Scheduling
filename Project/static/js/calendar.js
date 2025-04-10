@@ -203,9 +203,6 @@ function load_calendar() {
       if (cachedObj) {
         const cachedData = cachedObj.data;
 
-        // Immediately show cached data while updating
-        successCallback(cachedData);
-
         // 1. Prepare version map from cache
         const versionMap = cachedData.map(event => ({
           event_id: event.event_id,
@@ -227,13 +224,27 @@ function load_calendar() {
             if (!response.ok) {
               throw new Error(updates.error);
             }
+
+            const newAndUpdatedEvents = updates.updated_events;
+            const deletedEventIds = updates.deleted_events;
+
             // 3. Merge updates with cache
 
+            // Delete the cached events that are not in the database anymore
+            deletedEventIds.forEach(deleted_event_id => {
+              calendarCache.clearEvent(group_id, deleted_event_id);
+            });
+
             // Create a copy of cached data to modify
-            const mergedData = [...cachedData];
+            let mergedData = [...cachedData];
+
+            // Remove deleted events from the merged data
+            mergedData = mergedData.filter(event =>
+              !deletedEventIds.includes(event.event_id)
+            );
 
             // Process updates
-            updates.forEach(update => {
+            newAndUpdatedEvents.forEach(update => {
               const existingIndex = mergedData.findIndex(e => e.event_id === update.event_id);
 
               if (existingIndex >= 0) {
@@ -701,6 +712,10 @@ function load_calendar() {
           calendar.removeAllEvents();
           cleanupResources("all");
           calendar.refetchEvents();
+
+          fetch_unread_notifications_count();   // Refresh the notification count
+          fetch_pending_invites_count(); // Refresh the invite count
+
           showFlashMessage('success', response.message);
         },
         error: function (response) {
@@ -718,16 +733,14 @@ function load_calendar() {
       type: 'DELETE',
       contentType: 'application/json',
       success: function (response) {
-        if (response.status == 'success') {
-          // Clear cache when group changes
-          const group_id = document.getElementById('group-select').value;
-          if (group_id !== 1) {
-            // Clear cache of the dashboard as it might have changed due to group event
-            calendarCache.clearEvent(1, event_id);
-          }
-          calendarCache.clearEvent(group_id, event_id);
-          event.remove();
+        // Clear cache when group changes
+        const group_id = document.getElementById('group-select').value;
+        if (group_id !== 1) {
+          // Clear cache of the dashboard as it might have changed due to group event
+          calendarCache.clearEvent(1, event_id);
         }
+        calendarCache.clearEvent(group_id, event_id);
+        event.remove();
         showFlashMessage('success', response.message);
       },
       error: function (response) {
