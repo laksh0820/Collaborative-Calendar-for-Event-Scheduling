@@ -4,6 +4,7 @@ from flask_login import login_user,login_required,current_user,logout_user
 from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
+from sqlalchemy import func
 from Project import app,db
 from datetime import datetime, timezone, timedelta
 import json
@@ -152,37 +153,27 @@ def create_group():
 @app.route('/get_pending_invites_count', methods=['GET'])
 @login_required
 def get_pending_invites_count():
-    group_invites = (
-        db.session.query(Member.member_id, Group.group_name, Group.description)
+    group_invite_count = (
+        db.session.query(func.count(Member.member_id))
         .join(Member.group)
         .filter(
             Member.user_id == current_user.user_id,
             Member.status == 'Pending'
         )
-        .all()
+        .scalar()
     )
 
-    event_invites = (
-        db.session.query(
-            Participate.participate_id,
-            Event.event_name,
-            Event.description,
-            Event.start_time,
-            Event.end_time,
-            User.name,
-            Group.group_name
-        )
+    event_invite_count = (
+        db.session.query(func.count(Participate.participate_id))
         .join(Participate.event)
-        .join(Event.event_creator)
-        .join(Event.host_group)
         .filter(
             Participate.user_id == current_user.user_id,
             Participate.status == 'Pending'
         )
-        .all()
+        .scalar()
     )
 
-    return jsonify(len(group_invites) + len(event_invites)) 
+    return jsonify(group_invite_count + event_invite_count) 
 
 # Group and Event Invites
 @app.route('/check_invites',methods=['GET','POST'])
@@ -267,27 +258,27 @@ def check_invites():
 def get_unread_notifications_count():
     # For groups
     unread_groups = (
-        db.session.query(Group.group_id, Group.group_name, Member.invite_time)
+        db.session.query(func.count(Member.member_id))
         .join(Member.group)
         .filter(
-            Member.read_status == 'Unread',
-            Member.user_id == current_user.user_id
+            Member.user_id == current_user.user_id,
+            Member.read_status == 'Unread'
         )
-        .all()
+        .scalar()
     )
 
     # For events
     unread_events = (
-        db.session.query(Participate.event_id, Event.event_name, Participate.invite_time)
+        db.session.query(func.count(Participate.participate_id))
         .join(Participate.event)
         .filter(
-            Participate.read_status == 'Unread',
-            Participate.user_id == current_user.user_id
+            Participate.user_id == current_user.user_id,
+            Participate.read_status == 'Unread'
         )
-        .all()
+        .scalar()
     )
 
-    return jsonify(len(unread_groups) + len(unread_events))
+    return jsonify(unread_groups + unread_events)
 
 # To get the notifications for the user
 @app.route('/get_notifications', methods=['GET', 'POST'])

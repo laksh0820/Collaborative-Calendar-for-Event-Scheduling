@@ -1740,7 +1740,6 @@ function fetch_unread_notifications_count() {
           notificationBadge.classList.add('d-none');
         }
       }
-      console.log(unreadCount);
     },
     error: function () {
       console.error('Error fetching notifications count');
