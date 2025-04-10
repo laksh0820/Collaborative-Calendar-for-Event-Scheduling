@@ -35,6 +35,13 @@ const calendarCache = {
     localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
   },
 
+  // Clear entire cache 
+  clearAll: function () {
+    Object.keys(localStorage).forEach(key => {
+      localStorage.removeItem(key);
+    });
+  },
+
   // Clear specific cache entries
   clear: function (groupId) {
     Object.keys(localStorage).forEach(key => {
@@ -74,6 +81,18 @@ const calendarCache = {
     }
   }
 };
+
+// For Clearing the cache when the user signout
+document.getElementById('signout-navbar')?.addEventListener('click', function (e) {
+  e.preventDefault();
+  calendarCache.clearAll(); // clear only our app's cache
+  window.location.href = this.href;  // proceed with signout after clearing the cache
+});
+document.getElementById('signout-sidebar')?.addEventListener('click', function (e) {
+  e.preventDefault();
+  calendarCache.clearAll(); // clear only our app's cache
+  window.location.href = this.href;  // proceed with signout after clearing the cache
+});
 
 // For Check Invite
 let checkInvt = document.querySelector('#check-invites-link');

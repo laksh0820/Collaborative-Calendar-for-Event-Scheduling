@@ -58,7 +58,7 @@ class Participate(db.Model):
     
     __table_args__ = (
         db.UniqueConstraint('user_id', 'event_id', name='uq_user_event'),
-        db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
+        db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending')"),
         db.CheckConstraint("read_status IN ('Read', 'Unread')"),
     )
 
@@ -74,5 +74,5 @@ class Member(db.Model):
     __table_args__ = (
         db.CheckConstraint("permission IN ('Admin', 'Editor', 'Viewer')"),
         db.CheckConstraint("read_status IN ('Read', 'Unread')"),
-        db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
+        db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending')"),
     )
