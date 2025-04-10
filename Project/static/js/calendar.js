@@ -191,6 +191,14 @@ function load_calendar() {
     },
     weekNumbers: true,
     dayMaxEvents: true,
+    eventTimeFormat: {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      meridiem: 'short'
+    },
+    selectable: true,
+    nowIndicator: true,
     eventDidMount: function (info) {
       if (info.event.extendedProps.description) {
         // Create a tooltip for the event description
@@ -882,14 +890,6 @@ function load_calendar() {
       }
       /* ------------------------------------------ EVENT VIEW MODAL ---------------------------------------------- */
     },
-    eventTimeFormat: {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      meridiem: 'short'
-    },
-    selectable: true,
-    nowIndicator: true,
     select: function (arg) {
 
       // Get the current user permission corresponding to the group
@@ -1938,6 +1938,8 @@ function load_calendar() {
 // Initialize calendar when DOM is loaded
 document.addEventListener('DOMContentLoaded', load_calendar);
 
+// ------------------------------------ NOTIFICATION HANDLER --------------------------------------------
+
 // Notification popover functionality
 const notificationBtn = document.getElementById('notificationBtn');
 const notificationPopover = document.getElementById('notificationPopover');
@@ -2158,6 +2160,10 @@ function get_notifications() {
     }
   }
 }
+
+// ------------------------------------ NOTIFICATION HANDLER --------------------------------------------
+
+// ------------------------------------- GROUP CREATION HANDLER -----------------------------------------
 
 // Create group functionality
 let createGrp = document.querySelector('#create-group-link');
@@ -2409,3 +2415,5 @@ function create_group() {
     renderMembersList();
   }
 }
+
+// ------------------------------------- GROUP CREATION HANDLER -----------------------------------------
