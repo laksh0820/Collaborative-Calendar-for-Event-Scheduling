@@ -367,7 +367,8 @@ def return_data(group_id):
                 'end': local_end_time.isoformat(),
                 'event_type': 'individual',
                 'is_pending_for_current_user': False,
-                'event_edit_permission': 'Admin'
+                'event_edit_permission': 'Admin',
+                'version':event.version_number
             })
             
         group_events = (
@@ -461,7 +462,8 @@ def return_data(group_id):
                 'pending_participants':pending_participants,
                 'declined_participants':declined_participants,
                 'is_pending_for_current_user': is_pending,
-                'event_edit_permission': 'Viewer'
+                'event_edit_permission': 'Viewer',
+                'version':event.version_number
             })
             
     else:
@@ -558,8 +560,245 @@ def return_data(group_id):
                 'pending_participants': pending_participants,
                 'declined_participants': declined_participants,
                 'is_pending_for_current_user': is_pending,
-                'event_edit_permission': permission
+                'event_edit_permission': permission,
+                'version':event.version_number
             })
+    return jsonify(events_data)
+
+# To get the updated / new events for the group or individual
+@app.route('/data/<int:group_id>/updates', methods=['POST'])
+@login_required
+def return_update_data(group_id):
+    versionMap = request.get_json()
+    
+    print(versionMap['events'])
+    cached_events = []
+    for element in versionMap['events']:
+        cached_events.append(element['event_id'])
+    version_map = {item['event_id']: item['version'] for item in versionMap['events']}
+    
+    if group_id == 1:
+        # Get all the events from the database created by current user
+        events_data = []
+        for event in current_user.created_events:
+            local_start_time = event.start_time.astimezone()
+            local_end_time = event.end_time.astimezone()
+            if event.start_time.tzinfo is None:
+                local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                local_start_time = local_start_time.astimezone()
+            if event.end_time.tzinfo is None:
+                local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                local_end_time = local_end_time.astimezone()
+            
+            if event.group_id == 1 and (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+                events_data.append({
+                'event_id': event.event_id,
+                'title': event.event_name,
+                'description': event.description,
+                'start': local_start_time.isoformat(), 
+                'end': local_end_time.isoformat(),
+                'event_type': 'individual',
+                'is_pending_for_current_user': False,
+                'event_edit_permission': 'Admin',
+                'version':event.version_number
+            })
+            
+        group_events = (
+            db.session.query(Event)
+            .join(Participate, Event.event_id == Participate.event_id)
+            .filter(Participate.user_id == current_user.user_id)
+            .all()
+        )
+        for event in group_events:
+            if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+                users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id)
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                accepted_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                pending_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                declined_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                # Get participants for this event
+                participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                    # Add other participant fields as needed
+                } for participant in users]
+                
+                accepted_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in accepted_users]
+                
+                pending_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in pending_users]
+                
+                declined_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in declined_users]
+                
+                is_pending = any(
+                    participant['email'] == current_user.email 
+                    for participant in pending_participants
+                )
+
+                local_start_time = event.start_time.astimezone()
+                local_end_time = event.end_time.astimezone()
+                if event.start_time.tzinfo is None:
+                    local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                    local_start_time = local_start_time.astimezone()
+                if event.end_time.tzinfo is None:
+                    local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                    local_end_time = local_end_time.astimezone()
+
+                events_data.append({
+                    'event_id': event.event_id,
+                    'title': event.event_name,
+                    'description': event.description,
+                    'start': local_start_time.isoformat(), 
+                    'end': local_end_time.isoformat(),
+                    'event_type': 'group',
+                    'participants': participants,
+                    'accepted_participants': accepted_participants,
+                    'pending_participants':pending_participants,
+                    'declined_participants':declined_participants,
+                    'is_pending_for_current_user': is_pending,
+                    'event_edit_permission': 'Viewer',
+                    'version':event.version_number
+                })
+            
+    else:
+        # Get all the events for the group
+        group = Group.query.filter_by(group_id=group_id).first()
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        events = group.events
+    
+        events_data = []
+        for event in events:
+            if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+                permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+                
+                users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id)
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                accepted_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                pending_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                declined_users = (
+                    db.session.query()
+                    .select_from(User)
+                    .join(Participate, User.user_id == Participate.user_id)
+                    .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
+                    .add_columns(User.name,User.email)
+                    .all()
+                )
+                
+                # Get participants for this event
+                participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                    # Add other participant fields as needed
+                } for participant in users]
+                
+                accepted_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in accepted_users]
+                
+                pending_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in pending_users]
+                
+                declined_participants = [{
+                    'name': participant.name,
+                    'email': participant.email
+                } for participant in declined_users]
+                
+                is_pending = any(
+                    participant['email'] == current_user.email 
+                    for participant in pending_participants
+                )
+
+                local_start_time = event.start_time.astimezone()
+                local_end_time = event.end_time.astimezone()
+                if event.start_time.tzinfo is None:
+                    local_start_time = event.start_time.replace(tzinfo=timezone.utc)
+                    local_start_time = local_start_time.astimezone()
+                if event.end_time.tzinfo is None:
+                    local_end_time = event.end_time.replace(tzinfo=timezone.utc)
+                    local_end_time = local_end_time.astimezone()
+
+                events_data.append({
+                    'event_id': event.event_id,
+                    'title': event.event_name,
+                    'description': event.description,
+                    'start': local_start_time.isoformat(), 
+                    'end': local_end_time.isoformat(),
+                    'participants': participants,
+                    'accepted_participants': accepted_participants,
+                    'pending_participants': pending_participants,
+                    'declined_participants': declined_participants,
+                    'is_pending_for_current_user': is_pending,
+                    'event_edit_permission': permission,
+                    'version':event.version_number
+                })
+    
+    print(events_data)
     return jsonify(events_data)
 
 # To get the members of the group

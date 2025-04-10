@@ -4,6 +4,78 @@ const calendarResources = {
   tooltips: []
 };
 
+// Cache Manager
+const calendarCache = {
+  // Get cached data
+  get: function (groupId) {
+    const cacheKey = `calendar_events_${groupId}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return null;
+
+    const { data, timestamp, ttl } = JSON.parse(cached);
+
+    // Check if cache is expired (default 1 hour TTL)
+    const now = new Date().getTime();
+    if (now > timestamp + (ttl || 3600000)) {
+      localStorage.removeItem(cacheKey);
+      return null;
+    }
+
+    return { data, timestamp, ttl };
+  },
+
+  // Store data in cache
+  set: function (groupId, data, ttl = 3600000) {
+    const cacheKey = `calendar_events_${groupId}`;
+    const cacheValue = {
+      data,
+      timestamp: new Date().getTime(),
+      ttl
+    };
+    localStorage.setItem(cacheKey, JSON.stringify(cacheValue));
+  },
+
+  // Clear specific cache entries
+  clear: function (groupId) {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(`calendar_events_${groupId}`)) {
+        localStorage.removeItem(key);
+      }
+    });
+  },
+
+  // Clear specific event from the cache entries
+  clearEvent: function (groupId, eventId) {
+    const cacheKey = `calendar_events_${groupId}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    if (!cached) return; // No cache exists for this group
+
+    try {
+      const { data, timestamp, ttl } = JSON.parse(cached);
+
+      // Filter out the event to be removed
+      const updatedEvents = data.filter(event => event.event_id !== eventId);
+      console.log(updatedEvents);
+
+      // Only update cache if something was actually removed
+      if (updatedEvents.length !== data.length) {
+        const newCacheValue = {
+          data: updatedEvents,
+          timestamp, // Keep original timestamp
+          ttl       // Keep original TTL
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(newCacheValue));
+        return true; // Indicate success
+      }
+      return false; // No changes made
+    } catch (e) {
+      console.error('Error processing cache:', e);
+      return false;
+    }
+  }
+};
+
 // For Check Invite
 let checkInvt = document.querySelector('#check-invites-link');
 
@@ -118,9 +190,77 @@ function load_calendar() {
     },
     events: function (fetchInfo, successCallback, failureCallback) {
       const group_id = document.getElementById('group-select').value;
+
+      // Try to get from cache first
+      const cachedObj = calendarCache.get(group_id);
+      if (cachedObj) {
+        const cachedData = cachedObj.data;
+
+        console.log("Before", cachedData);
+
+        // Immediately show cached data while updating
+        successCallback(cachedData);
+
+        // 1. Prepare version map from cache
+        const versionMap = cachedData.map(event => ({
+          event_id: event.event_id,
+          version: event.version
+        }));
+
+        // 2. Request only updated events
+        fetch(`/data/${group_id}/updates`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            events: versionMap
+          })
+        })
+          .then(response => response.json())
+          .then(updates => {
+            // 3. Merge updates with cache
+
+            // Create a copy of cached data to modify
+            const mergedData = [...cachedData];
+
+            console.log("updates", updates);
+
+            // Process updates
+            updates.forEach(update => {
+              const existingIndex = mergedData.findIndex(e => e.event_id === update.event_id);
+
+              if (existingIndex >= 0) {
+                // Update existing event (preserve unchanged fields)
+                mergedData[existingIndex] = {
+                  ...mergedData[existingIndex],
+                  ...update
+                };
+              } else {
+                // Add new event
+                mergedData.push(update);
+              }
+            });
+
+            console.log("After", mergedData);
+
+            // 4. Update cache and callback
+            calendarCache.set(group_id, mergedData, cachedObj.ttl);
+            successCallback(mergedData);
+          })
+          .catch(error => {
+            console.error('Update check failed, using cached data', error);
+          });
+        return;
+      }
+
       fetch(`/data/${group_id}`)
         .then(response => response.json())
-        .then(data => successCallback(data))
+        .then(data => {
+          // Store in cache
+          calendarCache.set(group_id, data);
+          successCallback(data);
+        })
         .catch(error => failureCallback(error));
     },
     eventClick: function (info) {
@@ -539,6 +679,13 @@ function load_calendar() {
           pending_participants: event.extendedProps.pending_participants
         }),
         success: function (response) {
+          // Clear cache when group changes
+          const group_id = document.getElementById('group-select').value;
+          calendarCache.clear(group_id);
+          if (group_id !== 1) {
+            // Clear cache of the dashboard as it might have changed due to group event
+            calendarCache.clear(1);
+          }
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
@@ -553,13 +700,20 @@ function load_calendar() {
 
   function removeEvent(event) {
     $('#modal-view-event').modal('hide');
-
+    var event_id = event.extendedProps.event_id;
     $.ajax({
-      url: `/remove_event/${event.extendedProps.event_id}`,
+      url: `/remove_event/${event_id}`,
       type: 'DELETE',
       contentType: 'application/json',
       success: function (response) {
         if (response.status == 'success') {
+          // Clear cache when group changes
+          const group_id = document.getElementById('group-select').value;
+          if (group_id !== 1) {
+            // Clear cache of the dashboard as it might have changed due to group event
+            calendarCache.clearEvent(1, event_id);
+          }
+          calendarCache.clearEvent(group_id, event_id);
           event.remove();
         }
         showFlashMessage(response.status, response.message);
@@ -664,6 +818,13 @@ function load_calendar() {
           participants: participants
         }),
         success: function (response) {
+          // Clear cache when group changes
+          const group_id = document.getElementById('group-select').value;
+          calendarCache.clear(group_id);
+          if (group_id !== 1) {
+            // Clear cache of the dashboard as it might have changed due to group event
+            calendarCache.clear(1);
+          }
           calendar.removeAllEvents();
           cleanupResources();
           calendar.refetchEvents();
@@ -1045,13 +1206,13 @@ function load_calendar() {
         $('.accept-btn').click(function () {
           const id = $(this).data('id');
           const type = $(this).data('type');
-          respondToInvite(id, type, 'Accepted');
+          respondToInvite(id, type, 'Accepted', response.group_id);
         });
 
         $('.decline-btn').click(function () {
           const id = $(this).data('id');
           const type = $(this).data('type');
-          respondToInvite(id, type, 'Declined');
+          respondToInvite(id, type, 'Declined', response.group_id);
         });
       },
       error: function () {
@@ -1061,7 +1222,7 @@ function load_calendar() {
       }
     });
 
-    function respondToInvite(id, type, status) {
+    function respondToInvite(id, type, status, group_id) {
       $.ajax({
         url: '/check_invites',
         type: 'POST',
@@ -1072,38 +1233,41 @@ function load_calendar() {
           status: status
         }),
         success: function (response) {
-          // Update the group-select 
-          $.ajax({
-            url: '/get_groups',
-            type: 'GET',
-            success: function (data) {
-              const select = $('#group-select');
-              select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
+          if (type == 'group') {
+            // Update the group-select 
+            // Group invites accepted / rejected
+            $.ajax({
+              url: '/get_groups',
+              type: 'GET',
+              success: function (data) {
+                const select = $('#group-select');
+                select.empty().append('<option id="group-select-option-1" value="1">Dashboard</option>');
 
-              $.each(data, function (index, group) {
-                select.append(
-                  $('<option></option>')
-                    .attr('id', 'group-select-option-' + group.group_id)
-                    .val(group.group_id)
-                    .text(group.name)
-                );
-              });
+                $.each(data, function (index, group) {
+                  select.append(
+                    $('<option></option>')
+                      .attr('id', 'group-select-option-' + group.group_id)
+                      .val(group.group_id)
+                      .text(group.name)
+                  );
+                });
 
-              calendar.removeAllEvents();
-              cleanupResources();
-              calendar.refetchEvents();
-
-              fetch_unread_notifications_count();   // Refresh the notification count
-            },
-            error: function () {
-              $('#group-select').html('<option value="" disabled>Error loading groups</option>');
-            }
-          });
-
-          // Refresh the events
-          calendar.removeAllEvents();
-          cleanupResources();
-          calendar.refetchEvents();
+                fetch_unread_notifications_count();   // Refresh the notification count
+              },
+              error: function () {
+                $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+              }
+            });
+          }
+          else {
+            // Event invites accepted / rejected
+            // If it is a invite for a event, we need to refresh group as well as dashboard events
+            calendarCache.clear(group_id);
+            calendarCache.clear(1);
+            calendar.removeAllEvents();
+            cleanupResources();
+            calendar.refetchEvents();
+          }
 
           // Remove the invite from view
           $(`#invite-${id}`).fadeOut(300, function () {
@@ -1502,6 +1666,9 @@ function load_calendar() {
     function saveChanges(groupId) {
       if (!hasChanges) return;
 
+      var name_changed = originalData.name !== currentData.name;
+      var members_changed = JSON.stringify(members) !== JSON.stringify(originalData.members);
+
       const origEmails = new Set(originalData.members.map(m => m.email));
       const currEmails = new Set(members.map(m => m.email));
 
@@ -1545,7 +1712,17 @@ function load_calendar() {
             alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
           checkForChanges();
           renderMembersList();
-          refreshGroupList(groupId);
+          if (name_changed) {
+            refreshGroupList(groupId);
+          }
+          if (members_changed) {
+            // Clear cache when group changes
+            const group_id = document.getElementById('group-select').value;
+            calendarCache.clear(group_id);
+            calendar.removeAllEvents();
+            cleanupResources();
+            calendar.refetchEvents();
+          }
         },
         error: () => showFlashMessage('error', 'Failed to update group')
       });
@@ -1573,10 +1750,6 @@ function load_calendar() {
             );
           });
           select.val(groupId);
-
-          calendar.removeAllEvents();
-          cleanupResources();
-          calendar.refetchEvents();
         },
         error: function () {
           $('#group-select').html('<option value="" disabled>Error loading groups</option>');
@@ -1621,7 +1794,6 @@ $(document).ready(function () {
   }
 });
 
-
 // Notification popover functionality
 const notificationBtn = document.getElementById('notificationBtn');
 const notificationPopover = document.getElementById('notificationPopover');
@@ -1662,7 +1834,6 @@ if (notificationBtn !== null) {
     e.preventDefault();
   }, false);
 }
-
 
 // Close notification popover when clicking outside
 document.addEventListener('click', (e) => {
@@ -1811,7 +1982,6 @@ function get_notifications() {
     }
   }
 }
-
 
 // Create group functionality
 let createGrp = document.querySelector('#create-group-link');
