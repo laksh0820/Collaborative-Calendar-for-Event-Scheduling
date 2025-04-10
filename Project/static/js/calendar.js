@@ -325,7 +325,8 @@ function load_calendar() {
             permission = response.permission
           },
           error: function (response) {
-            showFlashMessage('error', response.error);
+            const errorResponse = JSON.parse(response.responseText);
+            showFlashMessage('error', errorResponse.error);
           }
         });
       }
@@ -719,13 +720,23 @@ function load_calendar() {
           cleanupResources("all");
           calendar.refetchEvents();
 
-          fetch_unread_notifications_count();   // Refresh the notification count
-          fetch_pending_invites_count(); // Refresh the invite count
-
           showFlashMessage('success', response.message);
         },
         error: function (response) {
-          showFlashMessage('error', response.error);
+          const errorResponse = JSON.parse(response.responseText);
+
+          // Clear cache when group changes
+          const group_id = document.getElementById('group-select').value;
+          calendarCache.clear(group_id);
+          if (group_id !== 1) {
+            // Clear cache of the dashboard as it might have changed due to group event
+            calendarCache.clear(1);
+          }
+          calendar.removeAllEvents();
+          cleanupResources("all");
+          calendar.refetchEvents();
+
+          showFlashMessage('error', errorResponse.error);
         }
       });
     }
@@ -750,7 +761,20 @@ function load_calendar() {
         showFlashMessage('success', response.message);
       },
       error: function (response) {
-        showFlashMessage('error', response.error);
+        const errorResponse = JSON.parse(response.responseText);
+
+        // Clear cache when group changes
+        const group_id = document.getElementById('group-select').value;
+        calendarCache.clear(group_id);
+        if (group_id !== 1) {
+          // Clear cache of the dashboard as it might have changed due to group event
+          calendarCache.clear(1);
+        }
+        calendar.removeAllEvents();
+        cleanupResources("all");
+        calendar.refetchEvents();
+
+        showFlashMessage('error', errorResponse.error);
       }
     });
   }
@@ -863,7 +887,18 @@ function load_calendar() {
           showFlashMessage('success', response.message);
         },
         error: function (response) {
-          showFlashMessage('error', response.error);
+          const errorResponse = JSON.parse(response.responseText);
+          // Clear cache when group changes
+          const group_id = document.getElementById('group-select').value;
+          calendarCache.clear(group_id);
+          if (group_id !== 1) {
+            // Clear cache of the dashboard as it might have changed due to group event
+            calendarCache.clear(1);
+          }
+          calendar.removeAllEvents();
+          cleanupResources("all");
+          calendar.refetchEvents();
+          showFlashMessage('error', errorResponse.error);
         }
       });
     }
@@ -1300,9 +1335,6 @@ function load_calendar() {
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
-
-            fetch_unread_notifications_count();   // Refresh the notification count
-            fetch_pending_invites_count(); // Refresh the invite count
           }
 
           // Remove the invite from view
@@ -1343,7 +1375,8 @@ function load_calendar() {
           }, 1000);
         },
         error: function (response) {
-          showFlashMessage('error', response.error);
+          const errorResponse = JSON.parse(response.responseText);
+          showFlashMessage('error', errorResponse.error);
         }
       });
     }
@@ -1424,7 +1457,8 @@ function load_calendar() {
         createAndShowModal(isAdmin, groupId);
       },
       error: function (response) {
-        showFlashMessage('error', response.error);
+        const errorResponse = JSON.parse(response.responseText);
+        showFlashMessage('error', errorResponse.error);
       }
     });
 
@@ -1606,7 +1640,8 @@ function load_calendar() {
                 calendarCache.clear(groupId);
               },
               error: function (response) {
-                showFlashMessage('error', response.error);
+                const errorResponse = JSON.parse(response.responseText);
+                showFlashMessage('error', errorResponse.error);
               }
             });
           }
@@ -1768,7 +1803,8 @@ function load_calendar() {
           }
         },
         error: function (response) {
-          showFlashMessage('error', response.error);
+          const errorResponse = JSON.parse(response.responseText);
+          showFlashMessage('error', errorResponse.error);
         }
       });
     }
@@ -2295,7 +2331,8 @@ function create_group() {
           alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
       },
       error: function (response) {
-        showFlashMessage('error', response.error);
+        const errorResponse = JSON.parse(response.responseText);
+        showFlashMessage('error', errorResponse.error);
       }
     });
 
