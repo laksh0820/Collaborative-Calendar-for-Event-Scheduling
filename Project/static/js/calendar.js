@@ -1211,13 +1211,13 @@ function load_calendar() {
         $('.accept-btn').click(function () {
           const id = $(this).data('id');
           const type = $(this).data('type');
-          respondToInvite(id, type, 'Accepted', response.group_id);
+          respondToInvite(id, type, 'Accepted');
         });
 
         $('.decline-btn').click(function () {
           const id = $(this).data('id');
           const type = $(this).data('type');
-          respondToInvite(id, type, 'Declined', response.group_id);
+          respondToInvite(id, type, 'Declined');
         });
       },
       error: function () {
@@ -1227,7 +1227,7 @@ function load_calendar() {
       }
     });
 
-    function respondToInvite(id, type, status, group_id) {
+    function respondToInvite(id, type, status) {
       $.ajax({
         url: '/check_invites',
         type: 'POST',
@@ -1238,7 +1238,7 @@ function load_calendar() {
           status: status
         }),
         success: function (response) {
-          if (type == 'group') {
+          if (type === 'group') {
             // Update the group-select 
             // Group invites accepted / rejected
             $.ajax({
@@ -1268,7 +1268,7 @@ function load_calendar() {
           else {
             // Event invites accepted / rejected
             // If it is a invite for a event, we need to refresh group as well as dashboard events
-            calendarCache.clear(group_id);
+            calendarCache.clear(response.group_id);
             calendarCache.clear(1);
             calendar.removeAllEvents();
             cleanupResources("all");

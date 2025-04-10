@@ -132,6 +132,8 @@ def create_group():
             
             for i in range(len(group['members'])):
                 email = group['members'][i].lower()
+                if email == current_user.email:
+                    continue
                 user = User.query.filter_by(email=email).first()
                 if user is None:
                     invalid_emails.append(email)
@@ -242,15 +244,17 @@ def check_invites():
                 else:
                     invite.status = response['status']
                     invite.read_status = 'Read'
+                group_id = 0
             else:
                 invite = Participate.query.filter_by(participate_id=response['invite_id']).first()
+                group_id = invite.event.group_id
                 invite.status = response['status']
                 invite.read_status = 'Read'
             db.session.commit()
         except:
             db.session.rollback()
             return "Unable to edit invite status", 500
-        return jsonify(success=True)
+        return jsonify({'group_id':f'{group_id}'}), 200
 
 # To get the number of unread notifications for the user
 @app.route('/get_unread_notifications_count', methods=['GET'])
