@@ -438,7 +438,7 @@ def return_data(group_id):
                 'event_type': 'individual',
                 'is_pending_for_current_user': False,
                 'event_edit_permission': 'Admin',
-                'version':event.version_number
+                'version':event.cache_number
             })
             
         group_events = (
@@ -535,7 +535,7 @@ def return_data(group_id):
                 'declined_participants':declined_participants,
                 'is_pending_for_current_user': is_pending,
                 'event_edit_permission': 'Viewer',
-                'version':event.version_number
+                'version':event.cache_number
             })
             
     else:
@@ -636,7 +636,7 @@ def return_data(group_id):
                 'declined_participants': declined_participants,
                 'is_pending_for_current_user': is_pending,
                 'event_edit_permission': permission,
-                'version':event.version_number
+                'version':event.cache_number
             })
     return jsonify(events_data)
 
@@ -675,7 +675,7 @@ def return_update_data(group_id):
                 local_end_time = event.end_time.replace(tzinfo=timezone.utc)
                 local_end_time = local_end_time.astimezone()
             
-            if event.group_id == 1 and (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+            if event.group_id == 1 and (event.event_id not in cached_events or version_map[event.event_id] < event.cache_number):
                 events_data.append({
                 'event_id': event.event_id,
                 'title': event.event_name,
@@ -685,7 +685,7 @@ def return_update_data(group_id):
                 'event_type': 'individual',
                 'is_pending_for_current_user': False,
                 'event_edit_permission': 'Admin',
-                'version':event.version_number
+                'version':event.cache_number
             })
             
         group_events = (
@@ -699,7 +699,7 @@ def return_update_data(group_id):
             current_user_events.append(event.event_id)
             
         for event in group_events:
-            if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+            if (event.event_id not in cached_events or version_map[event.event_id] < event.cache_number):
                 users = (
                     db.session.query()
                     .select_from(User)
@@ -785,7 +785,7 @@ def return_update_data(group_id):
                     'declined_participants':declined_participants,
                     'is_pending_for_current_user': is_pending,
                     'event_edit_permission': 'Viewer',
-                    'version':event.version_number
+                    'version':event.cache_number
                 })
       
         for cached_event_id in cached_events:
@@ -818,7 +818,7 @@ def return_update_data(group_id):
                 deleted_events.append(cached_event_id)
                 
         for event in events:
-            if (event.event_id not in cached_events or version_map[event.event_id] < event.version_number):
+            if (event.event_id not in cached_events or version_map[event.event_id] < event.cache_number):
                 users = (
                     db.session.query(User.name, User.email)
                     .join(User.participations)
@@ -904,7 +904,7 @@ def return_update_data(group_id):
                     'declined_participants': declined_participants,
                     'is_pending_for_current_user': is_pending,
                     'event_edit_permission': permission,
-                    'version':event.version_number
+                    'version':event.cache_number
                 })
     
     return jsonify({
@@ -1081,7 +1081,7 @@ def add_event():
         description = event['description'],
         start_time = datetime.fromisoformat(event['start']),
         end_time = datetime.fromisoformat(event['end']),
-        version_number = 0,
+        cache_number = 0,
         creator = current_user.user_id,
         group_id = event['group_id']
     )
