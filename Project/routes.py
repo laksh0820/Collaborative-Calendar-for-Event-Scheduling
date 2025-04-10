@@ -4,6 +4,7 @@ from flask_login import login_user,login_required,current_user,logout_user
 from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
+from sqlalchemy import func
 from Project import app,db
 from datetime import datetime, timezone, timedelta
 import json
@@ -74,17 +75,18 @@ def signup():
         user_email = User.query.filter_by(email=form.email.data.lower()).first()
 
         if (user_email is None):
-            newUser = User()
-            newUser.name = form.name.data
-            newUser.email = form.email.data.lower()
-            newUser.password = generate_password_hash(str(form.password.data))
+            newUser = User(
+                name = form.name.data,
+                email = form.email.data.lower(),
+                password = generate_password_hash(str(form.password.data))
+            )
             try:
                 db.session.add(newUser)
                 db.session.commit()
                 login_user(newUser, remember=False)
                 flash("User Added Successfully",'success')
             except:
-                return "Unable to enter User to the Database"
+                return "Unable to enter User to the Database", 500
             form.name.data = ''
             form.email.data = ''
             form.password.data = ''
@@ -120,14 +122,13 @@ def create_group():
             db.session.add(newGroup)
             db.session.flush()
 
-            admin = Member(
+            db.session.add(Member(
                 user_id = current_user.user_id,
                 group_id = newGroup.group_id,
                 read_status = 'Read',
                 permission = 'Admin',
                 status = 'Accepted'
-            )
-            db.session.add(admin)
+            ))
             
             for i in range(len(group['members'])):
                 email = group['members'][i].lower()
@@ -144,9 +145,35 @@ def create_group():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add new group to the database"
+            return "Unable to add new group to the database", 500
     
         return jsonify({'emails': invalid_emails}), 200
+
+# To get the number of pending invites for the user
+@app.route('/get_pending_invites_count', methods=['GET'])
+@login_required
+def get_pending_invites_count():
+    group_invite_count = (
+        db.session.query(func.count(Member.member_id))
+        .join(Member.group)
+        .filter(
+            Member.user_id == current_user.user_id,
+            Member.status == 'Pending'
+        )
+        .scalar()
+    )
+
+    event_invite_count = (
+        db.session.query(func.count(Participate.participate_id))
+        .join(Participate.event)
+        .filter(
+            Participate.user_id == current_user.user_id,
+            Participate.status == 'Pending'
+        )
+        .scalar()
+    )
+
+    return jsonify(group_invite_count + event_invite_count) 
 
 # Group and Event Invites
 @app.route('/check_invites',methods=['GET','POST'])
@@ -154,13 +181,13 @@ def create_group():
 def check_invites():
     if request.method == 'GET':
         group_invites = (
-            db.session.query()
-            .select_from(Member)
-            .join(Group, Member.group_id == Group.group_id)
-            .filter(Member.user_id == current_user.user_id)
-            .filter(Member.status == 'Pending')
+            db.session.query(Member.member_id, Group.group_name, Group.description)
+            .join(Member.group)
+            .filter(
+                Member.user_id == current_user.user_id,
+                Member.status == 'Pending'
+            )
             .order_by(Member.invite_time.desc())
-            .add_columns(Member.member_id, Group.group_name, Group.description)
             .all()
         )
 
@@ -172,15 +199,23 @@ def check_invites():
         } for invite in group_invites]
 
         event_invites = (
-            db.session.query()
-            .select_from(Participate)
-            .join(Event, Participate.event_id == Event.event_id)
-            .join(User, Event.creator == User.user_id)
-            .join(Group, Event.group_id == Group.group_id)
-            .filter(Participate.user_id == current_user.user_id)
-            .filter(Participate.status == 'Pending')
+            db.session.query(
+                Participate.participate_id,
+                Event.event_name,
+                Event.description,
+                Event.start_time,
+                Event.end_time,
+                User.name,
+                Group.group_name
+            )
+            .join(Participate.event)
+            .join(Event.event_creator)
+            .join(Event.host_group)
+            .filter(
+                Participate.user_id == current_user.user_id,
+                Participate.status == 'Pending'
+            )
             .order_by(Participate.invite_time.desc())
-            .add_columns(Participate.participate_id, Event.event_name, Event.description, Event.start_time, Event.end_time, User.name, Group.group_name)
             .all()
         )
 
@@ -214,8 +249,36 @@ def check_invites():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to edit invite status"
+            return "Unable to edit invite status", 500
         return jsonify(success=True)
+
+# To get the number of unread notifications for the user
+@app.route('/get_unread_notifications_count', methods=['GET'])
+@login_required
+def get_unread_notifications_count():
+    # For groups
+    unread_groups = (
+        db.session.query(func.count(Member.member_id))
+        .join(Member.group)
+        .filter(
+            Member.user_id == current_user.user_id,
+            Member.read_status == 'Unread'
+        )
+        .scalar()
+    )
+
+    # For events
+    unread_events = (
+        db.session.query(func.count(Participate.participate_id))
+        .join(Participate.event)
+        .filter(
+            Participate.user_id == current_user.user_id,
+            Participate.read_status == 'Unread'
+        )
+        .scalar()
+    )
+
+    return jsonify(unread_groups + unread_events)
 
 # To get the notifications for the user
 @app.route('/get_notifications', methods=['GET', 'POST'])
@@ -225,22 +288,24 @@ def get_notifications():
     if (request.method == 'GET'):
         # For groups
         events1 = (
-            db.session.query()
-            .select_from(Member)
-            .filter(Member.read_status == 'Unread', Member.user_id == current_user.user_id)
-            .join(Group, Member.group_id == Group.group_id)
-            .add_columns(Group.group_id,Group.group_name,Member.invite_time)
+            db.session.query(Group.group_id, Group.group_name, Member.invite_time)
+            .join(Member.group)
+            .filter(
+                Member.read_status == 'Unread',
+                Member.user_id == current_user.user_id
+            )
             .order_by(Member.invite_time.desc())
             .all()
         )
 
         # For events
         events2 = (
-            db.session.query()
-            .select_from(Participate)
-            .join(Event, Participate.event_id == Event.event_id)
-            .filter(Participate.read_status == 'Unread', Participate.user_id == current_user.user_id)
-            .add_columns(Participate.event_id,Event.event_name,Participate.invite_time)
+            db.session.query(Participate.event_id, Event.event_name, Participate.invite_time)
+            .join(Participate.event)
+            .filter(
+                Participate.read_status == 'Unread',
+                Participate.user_id == current_user.user_id
+            )
             .order_by(Participate.invite_time.desc())
             .all()
         )
@@ -283,20 +348,20 @@ def get_notifications():
             return jsonify(success=True)
         except:
             db.session.rollback()
-            return "Unable to edit read status"
+            return "Unable to edit read status", 500
 
 # To get the groups for group-select
 @app.route('/get_groups')
 @login_required
 def get_groups():
     groups = (
-        db.session.query()
-        .select_from(Group)
-        .join(Member, Group.group_id == Member.group_id)
-        .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
-        .add_columns(Group.group_id,Group.group_name)
-        .group_by(Group.group_id,Group.group_name)
+        db.session.query(Group.group_id, Group.group_name)
+        .join(Group.members)
+        .filter(
+            Member.user_id == current_user.user_id,
+            Member.status == 'Accepted'
+        )
+        .group_by(Group.group_id, Group.group_name)
         .all()
     )
     
@@ -312,13 +377,13 @@ def get_groups():
 @login_required
 def get_calendar():
     groups = (
-        db.session.query()
-        .select_from(Group)
-        .join(Member, Group.group_id == Member.group_id)
-        .join(User, User.user_id == Member.user_id)
-        .filter(User.user_id == current_user.user_id, Member.status == 'Accepted')
-        .add_columns(Group.group_id,Group.group_name,Member.permission)
-        .group_by(Group.group_id,Group.group_name,Member.permission)
+        db.session.query(Group.group_id, Group.group_name, Member.permission)
+        .join(Group.members)
+        .filter(
+            Member.user_id == current_user.user_id,
+            Member.status == 'Accepted'
+        )
+        .group_by(Group.group_id, Group.group_name, Member.permission)
         .all()
     )
 
@@ -334,17 +399,18 @@ def return_data(group_id):
         group = Group.query.filter_by(group_id=1).first()
         
         if group is None:
-            newGroup = Group()
-            newGroup.group_name = 'No Group'
-            newGroup.description = 'No Description'
-            newGroup.version_number = 0
+            newGroup = Group(
+                group_name = 'No Group',
+                description = 'No Description',
+                version_number = 0
+            )
             
             try:
                 db.session.add(newGroup)
                 db.session.commit()
             except:
                 db.session.rollback()
-                return "Unable to add group 1 to the database"
+                return "Unable to add group 1 to the database", 500
         
         # Get all the events from the database created by current user
         events_data = []
@@ -373,44 +439,46 @@ def return_data(group_id):
             
         group_events = (
             db.session.query(Event)
-            .join(Participate, Event.event_id == Participate.event_id)
+            .join(Event.participations)
             .filter(Participate.user_id == current_user.user_id)
+            .filter(Participate.status != 'Declined')
             .all()
         )
         for event in group_events:
             users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
                 .filter(Participate.event_id == event.event_id)
-                .add_columns(User.name,User.email)
                 .all()
             )
             
             accepted_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Accepted'
+                )
                 .all()
             )
             
             pending_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Pending'
+                )
                 .all()
             )
             
             declined_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Declined'
+                )
                 .all()
             )
             
@@ -471,45 +539,49 @@ def return_data(group_id):
         group = Group.query.filter_by(group_id=group_id).first()
         if not group:
             return jsonify({'error': 'Group not found'}), 404
-        events = group.events
     
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+        permission = mem.permission
+
+        events = group.events
         events_data = []
         for event in events:
-            permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
-            
             users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
                 .filter(Participate.event_id == event.event_id)
-                .add_columns(User.name,User.email)
                 .all()
             )
             
             accepted_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Accepted')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Accepted'
+                )
                 .all()
             )
             
             pending_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Pending')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Pending'
+                )
                 .all()
             )
             
             declined_users = (
-                db.session.query()
-                .select_from(User)
-                .join(Participate, User.user_id == Participate.user_id)
-                .filter(Participate.event_id == event.event_id, Participate.status == 'Declined')
-                .add_columns(User.name,User.email)
+                db.session.query(User.name, User.email)
+                .join(User.participations)
+                .filter(
+                    Participate.event_id == event.event_id,
+                    Participate.status == 'Declined'
+                )
                 .all()
             )
             
@@ -517,7 +589,6 @@ def return_data(group_id):
             participants = [{
                 'name': participant.name,
                 'email': participant.email
-                # Add other participant fields as needed
             } for participant in users]
             
             accepted_participants = [{
@@ -806,12 +877,18 @@ def return_update_data(group_id):
 @login_required
 def get_members(group_id):
     group_id = int(group_id)
+    if group_id != 1:
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+    
     members = (
-        db.session.query()
-        .select_from(User)
-        .join(Member, Member.user_id == User.user_id)
-        .filter(Member.group_id == group_id, Member.status == 'Accepted')
-        .add_columns(User.name,User.email)
+        db.session.query(User.name, User.email)
+        .join(User.memberships)
+        .filter(
+            Member.group_id == group_id,
+            Member.status == 'Accepted'
+        )
         .all()
     )
     
@@ -826,15 +903,17 @@ def get_members(group_id):
 @login_required
 def get_info(group_id):
     group_id = int(group_id)
+    if group_id != 1:
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
     group = Group.query.filter_by(group_id=group_id).first()
 
     if request.method == 'GET':
         members = (
-            db.session.query()
-            .select_from(User)
-            .join(Member, Member.user_id == User.user_id)
+            db.session.query(User.user_id, User.name, User.email, Member.permission)
+            .join(User.memberships)
             .filter(Member.group_id == group_id)
-            .add_columns(User.user_id, User.name, User.email, Member.permission)
             .all()
         )
         members_list = [{
@@ -842,7 +921,7 @@ def get_info(group_id):
             'role': member.permission
         } for member in members]
 
-        authorization = any(member for member in members if member.user_id == current_user.user_id and member.permission == 'Admin')
+        authorization = any(member.user_id == current_user.user_id and member.permission == 'Admin' for member in members)
 
         return jsonify({
             'name': group.group_name,
@@ -854,20 +933,19 @@ def get_info(group_id):
     
     elif request.method == 'DELETE':
         try:
-            events = Event.query.filter_by(group_id=group_id).all()
-            for event in events:
-                for participation in event.participations:
-                    db.session.delete(participation)
-                db.session.delete(event)
-                
-            members = Member.query.filter_by(group_id=group_id).all()
-            for member in members:
-                db.session.delete(member)
+            Participate.query.filter(
+                Participate.event.has(group_id=group_id)
+            ).delete(synchronize_session=False)
+
+            Event.query.filter_by(group_id=group_id).delete(synchronize_session=False)
+
+            Member.query.filter_by(group_id=group_id).delete(synchronize_session=False)
+
             db.session.delete(group)
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to delete group from the database"
+            return "Unable to delete group from the database", 500
         return jsonify(success=True)
 
     else:
@@ -914,30 +992,27 @@ def get_info(group_id):
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
                 if user and user.user_id in current_members:
-                    participations = (
-                        Participate.query
-                        .join(Event)
-                        .filter(
-                            Participate.user_id == user.user_id,
-                            Event.group_id == group_id
-                        )
-                        .all()
-                    )
-                    for participation in participations:
-                        db.session.delete(participation)
+                    Participate.query.filter(
+                        Participate.event.has(group_id=group_id),
+                        Participate.user_id == user.user_id
+                    ).delete(synchronize_session=False)
+
                     db.session.delete(current_members[user.user_id])
             
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to update group info"
+            return "Unable to update group info", 500
         return jsonify({'emails': invalid_emails}), 200
 
 # To get the group permission info
 @app.route('/get_group_permission/<int:group_id>', methods=['GET'])
 @login_required
 def get_group_permission(group_id):
-    permission = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first().permission
+    mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+    if not mem:
+        return jsonify({'error': 'Access denied'}), 403
+    permission = mem.permission
     return jsonify({'permission':f'${permission}'}), 200
 
 # To add an event
@@ -948,18 +1023,22 @@ def add_event():
     
     if int(event['group_id']) != 1:
         # Check if the user has the permission to add the event
-        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=int(event['group_id'])).first().permission
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=int(event['group_id'])).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+        permission = mem.permission
         if permission == 'Viewer':
-            return jsonify({'status': 'error','message': 'Permission denied'}), 200
+            return jsonify({'status': 'error','message': 'Permission denied'}), 403
      
-    newEvent = Event()
-    newEvent.event_name = event['title']
-    newEvent.description = event['description']
-    newEvent.start_time = datetime.fromisoformat(event['start'])
-    newEvent.end_time = datetime.fromisoformat(event['end'])
-    newEvent.version_number = 0
-    newEvent.creator = current_user.user_id
-    newEvent.group_id = event['group_id']
+    newEvent = Event(
+        event_name = event['title'],
+        description = event['description'],
+        start_time = datetime.fromisoformat(event['start']),
+        end_time = datetime.fromisoformat(event['end']),
+        version_number = 0,
+        creator = current_user.user_id,
+        group_id = event['group_id']
+    )
     
     participantsEmail = []
     for element in event['participants']:
@@ -969,26 +1048,28 @@ def add_event():
     group = Group.query.filter_by(group_id=1).first()
     
     if group is None:
-        newGroup = Group()
-        newGroup.group_name = 'No Group'
-        newGroup.description = 'No Description'
-        newGroup.version_number = 0
+        newGroup = Group(
+            group_name = 'No Group',
+            description = 'No Description',
+            version_number = 0
+        )
         
         try:
             db.session.add(newGroup)
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add event to the database"
+            return "Unable to add event to the database", 500
    
     try:
         db.session.add(newEvent)
         db.session.commit()
             
         for participantEmail in participantsEmail:
-            participant = Participate()
-            participant.user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id
-            participant.event_id = newEvent.event_id
+            participant = Participate(
+                user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id,
+                event_id = newEvent.event_id
+            )
             if participantEmail == current_user.email:
                 participant.read_status = 'Read'
                 participant.status = 'Accepted'
@@ -998,9 +1079,9 @@ def add_event():
             db.session.commit()
         except:
             db.session.rollback()
-            return "Unable to add the participants"
+            return "Unable to add the participants", 500
     except:
-        return "Unable to add event to the database"
+        return "Unable to add event to the database", 500
     
     return jsonify({'status': 'success', 'message':'Event added successfully'}), 200
 
@@ -1013,16 +1094,18 @@ def remove_event(event_id):
 
     if event.group_id != 1:
         # Check if the user has the permission to add the event
-        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+        permission = mem.permission
         if permission == 'Viewer':
             return jsonify({'status': 'error','message': 'Permission denied'}), 200
 
     try:
-        # First delete participations
-        for participation in event.participations:
-            db.session.delete(participation)
-        
-        # Then delete the event
+        Participate.query.filter(
+            Participate.event_id == event_id
+        ).delete(synchronize_session=False)
+
         db.session.delete(event)
         
         db.session.commit()
@@ -1039,10 +1122,15 @@ def update_event(event_id):
     new_event = request.get_json()
     
     event = Event.query.filter_by(event_id=event_id).first()
+    if not event:
+        return jsonify({'status': 'error', 'message' : 'Event not found'}), 404
     
     if event.group_id != 1:
         # Check if the user has the permission to add the event
-        permission = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first().permission
+        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first()
+        if not mem:
+            return jsonify({'error': 'Access denied'}), 403
+        permission = mem.permission
         if permission == 'Viewer':
             return jsonify({'status': 'error','message': 'Permission denied'}), 200
         
@@ -1091,9 +1179,10 @@ def update_event(event_id):
             db.session.delete(participant)
         
         for participant_email in new_pending_participants_email:
-            participant = Participate()
-            participant.user_id = User.query.filter_by(email=participant_email.lower()).first().user_id
-            participant.event_id = event_id
+            participant = Participate(
+                user_id = User.query.filter_by(email=participant_email.lower()).first().user_id,
+                event_id = event_id
+            )
             db.session.add(participant)
     
     try:

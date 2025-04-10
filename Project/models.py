@@ -57,6 +57,7 @@ class Participate(db.Model):
     status = db.Column(db.String(50), default='Pending', nullable=False)
     
     __table_args__ = (
+        db.UniqueConstraint('user_id', 'event_id', name='uq_user_event'),
         db.CheckConstraint("status IN ('Accepted', 'Declined', 'Pending', 'NA')"),
         db.CheckConstraint("read_status IN ('Read', 'Unread')"),
     )

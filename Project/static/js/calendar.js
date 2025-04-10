@@ -102,20 +102,24 @@ function getAvatarColor(name) {
 }
 
 // Function to cleanup the calendar Resources
-function cleanupResources() {
-  // Remove all event listeners
-  calendarResources.modalListeners.forEach(({ element, event, handler }) => {
-    if (element instanceof jQuery) {
-      element.off(event, handler);
-    } else if (element instanceof Element) {
-      element.removeEventListener(event, handler);
-    }
-  });
-  calendarResources.modalListeners = [];
+function cleanupResources(arg) {
+  if (arg === 'all' || arg === 'modal') {
+    // Remove all event listeners
+    calendarResources.modalListeners.forEach(({ element, event, handler }) => {
+      if (element instanceof jQuery) {
+        element.off(event, handler);
+      } else if (element instanceof Element) {
+        element.removeEventListener(event, handler);
+      }
+    });
+    calendarResources.modalListeners = [];
+  }
 
   // Destroy all tooltips
-  calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
-  calendarResources.tooltips = [];
+  if (arg === 'all' || arg === 'tooltip') {
+    calendarResources.tooltips.forEach(tooltip => tooltip.dispose());
+    calendarResources.tooltips = [];
+  }
 }
 
 // Function to show Flash Messages
@@ -176,10 +180,14 @@ function load_calendar() {
         if (tooltip) {
           tooltip.dispose(); // Dispose of the existing tooltip instance
         }
+
+        let desc = info.event.extendedProps.description;
         tooltip = new bootstrap.Tooltip(info.el, {
-          title: info.event.extendedProps.description,
+          title: desc.length > 200 ? desc.substring(0, 200) + '...' : desc,
           placement: 'top',
-          trigger: 'hover'
+          trigger: 'hover',
+          html: true,
+          customClass: 'multiline-tooltip'
         });
         calendarResources.tooltips.push(tooltip);
       }
@@ -311,7 +319,7 @@ function load_calendar() {
   // Group selection change handler
   document.getElementById('group-select').addEventListener('change', function () {
     calendar.removeAllEvents();
-    cleanupResources();
+    cleanupResources("all");
     calendar.refetchEvents();
   });
 
@@ -350,11 +358,13 @@ function load_calendar() {
 
   // Event modal functions
   function showEventModal(info) {
+    cleanupResources("modal");
+    fetch_pending_invites_count();
     const modal = new bootstrap.Modal('#modal-view-event');
     $('.event-title').text(info.event.title);
     $('.event-body').html(
       info.event.extendedProps?.description ||
-      '<span class="no-description">No description</span>'
+      'No description available'
     );
 
     setDateTime(info.event.start, "start-datetime");
@@ -687,7 +697,7 @@ function load_calendar() {
             calendarCache.clear(1);
           }
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
           showFlashMessage(response.status, response.message);
         },
@@ -735,6 +745,7 @@ function load_calendar() {
   }
 
   function prepareEventCreationModal(group_id, arg) {
+    cleanupResources("modal");
     if (group_id == 1) {
       document.getElementById('participants').style.display = 'none';
     } else {
@@ -826,7 +837,7 @@ function load_calendar() {
             calendarCache.clear(1);
           }
           calendar.removeAllEvents();
-          cleanupResources();
+          cleanupResources("all");
           calendar.refetchEvents();
           showFlashMessage(response.status, response.message);
         },
@@ -1252,12 +1263,13 @@ function load_calendar() {
                   );
                 });
 
-                fetch_unread_notifications_count();   // Refresh the notification count
-              },
-              error: function () {
-                $('#group-select').html('<option value="" disabled>Error loading groups</option>');
-              }
-            });
+              fetch_unread_notifications_count();   // Refresh the notification count
+              fetch_pending_invites_count(); // Refresh the invite count
+            },
+            error: function () {
+              $('#group-select').html('<option value="" disabled>Error loading groups</option>');
+            }
+          });
           }
           else {
             // Event invites accepted / rejected
@@ -1265,7 +1277,7 @@ function load_calendar() {
             calendarCache.clear(group_id);
             calendarCache.clear(1);
             calendar.removeAllEvents();
-            cleanupResources();
+            cleanupResources("all");
             calendar.refetchEvents();
           }
 
@@ -1720,7 +1732,7 @@ function load_calendar() {
             const group_id = document.getElementById('group-select').value;
             calendarCache.clear(group_id);
             calendar.removeAllEvents();
-            cleanupResources();
+            cleanupResources("all");
             calendar.refetchEvents();
           }
         },
@@ -1802,6 +1814,7 @@ const notificationBadge = document.getElementById('notificationBadge');
 // Fetch number of unread notifications on page load
 document.addEventListener('DOMContentLoaded', function () {
   fetch_unread_notifications_count();
+  fetch_pending_invites_count(); // Fetch pending invites count
 });
 
 // Toggle notification popover
@@ -1845,16 +1858,47 @@ document.addEventListener('click', (e) => {
   }
 });
 
+
+// Fetch pending invites count
+function fetch_pending_invites_count() {
+  $.ajax({
+    url: '/get_pending_invites_count',
+    type: 'GET',
+    success: function (response) {
+      const pendingCount = response;
+      const pendingInvitesBadge = document.getElementById('inviteBadge');
+      const invites_icon = document.getElementById('invites-icon');
+      if (pendingCount > 0) {
+        pendingInvitesBadge.textContent = pendingCount;
+        if (pendingInvitesBadge.classList.contains('d-none')) {
+          pendingInvitesBadge.classList.remove('d-none');
+          invites_icon.classList.add('active');
+        }
+      } 
+      else {
+        pendingInvitesBadge.textContent = 0;
+        if (!pendingInvitesBadge.classList.contains('d-none')) {
+          pendingInvitesBadge.classList.add('d-none');
+          invites_icon.classList.remove('active');
+        }
+      }
+    },
+    error: function () {
+      console.error('Error fetching pending invites count');
+    }
+  });
+}
+
 // Fetch unread notifications count
 function fetch_unread_notifications_count() {
   // Check if the notification badge exists before trying to access it
   if (notificationBadge === null) return;
 
   $.ajax({
-    url: '/get_notifications',
+    url: '/get_unread_notifications_count',
     type: 'GET',
     success: function (response) {
-      const unreadCount = response.length;
+      const unreadCount = response;
       notificationBadge.textContent = unreadCount;
       if (unreadCount > 0) {
         // Show the badge if there are unread notifications
