@@ -1185,6 +1185,14 @@ def update_event(event_id):
     event.start_time = datetime.fromisoformat(new_event['start'])
     event.end_time = datetime.fromisoformat(new_event['end'])
     
+    # Access added_participants 
+    # (not present in the original Pending list but present in the current pending participant list) : new_event['added_participants']
+    
+    # Access deleted_participants
+    # (present in the original list, but not present now, including earlier pending participants that are not present now) : new_event['deleted_participants']
+    
+    # These changes are present inside load_calendar -> eventClick -> saveViewEvent (Refer in case of confusion)
+    
     if event.group_id != 1:
         accepted_participants = []
         declined_participants = []

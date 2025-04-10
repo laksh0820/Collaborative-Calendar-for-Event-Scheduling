@@ -331,6 +331,10 @@ function load_calendar() {
         }
       }
 
+      // Store initial set of participants
+      const originalParticipants = [...info.event.extendedProps.participants];
+      const originalPendingParticipants = [...info.event.extendedProps.pending_participants];
+
       showEventModal(info);
 
       /* ------------------------------------------ EVENT VIEW MODAL ---------------------------------------------- */
@@ -804,6 +808,32 @@ function load_calendar() {
         if (isValid) {
           $('#modal-view-event').modal('hide');
 
+          /* 
+            Find newly added participants (not present in the original Pending 
+            list but present in the current pending participant list)
+          */
+          let added_participants = [];
+          const currentPendingParticipants = event.extendedProps.pending_participants;
+          currentPendingParticipants.forEach(participant => {
+            const isOriginalPending = originalPendingParticipants.some(item => item.email === participant.email);
+            if (!isOriginalPending) {
+              added_participants.push(participant);
+            }
+          });
+
+          /* 
+            Find deleted participants (present in the original list, but not present now, 
+            including earlier pending participants that are not present now)
+          */
+          let deleted_participants = [];
+          const currentParticipant = event.extendedProps.participants;
+          originalParticipants.forEach(participant => {
+            const isCurrentParticpant = currentParticipant.some(item => item.email === participant.email);
+            if (!isCurrentParticpant) {
+              deleted_participants.push(participant);
+            }
+          });
+          
           $.ajax({
             url: `/update_event/${event.extendedProps.event_id}`,
             type: 'PUT',
@@ -815,7 +845,9 @@ function load_calendar() {
               description: description,
               accepted_participants: event.extendedProps.accepted_participants,
               declined_participants: event.extendedProps.declined_participants,
-              pending_participants: event.extendedProps.pending_participants
+              pending_participants: event.extendedProps.pending_participants,
+              added_participants: added_participants,
+              deleted_participants: deleted_participants
             }),
             success: function (response) {
               // Clear cache when group changes
