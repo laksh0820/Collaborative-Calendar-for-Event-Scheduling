@@ -353,6 +353,7 @@ function load_calendar() {
   // Event modal functions
   function showEventModal(info) {
     cleanupResources("modal");
+    fetch_unread_notifications_count();
     fetch_pending_invites_count();
     const modal = new bootstrap.Modal('#modal-view-event');
     $('.event-title').text(info.event.title);
@@ -1273,6 +1274,9 @@ function load_calendar() {
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
+
+            fetch_unread_notifications_count();   // Refresh the notification count
+            fetch_pending_invites_count(); // Refresh the invite count
           }
 
           // Remove the invite from view
