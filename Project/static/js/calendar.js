@@ -363,6 +363,8 @@ function load_calendar() {
     calendar.refetchEvents();
   });
 
+  /* ------------------------------------------ EVENT VIEW MODAL ---------------------------------------------- */
+
   // Set the Date Time field in the View event modal
   function setDateTime(timestamp, event_time) {
     // Create a Date object from the timestamp
@@ -396,7 +398,7 @@ function load_calendar() {
     }
   }
 
-  // Event modal functions
+  // Prepares the event information modal 
   function showEventModal(info) {
     cleanupResources("modal");
     const modal = new bootstrap.Modal('#modal-view-event');
@@ -466,6 +468,7 @@ function load_calendar() {
     modal.show();
   }
 
+  // To refresh the participants in accepted, decline and pending list in the modal
   function refreshParticipantsList(info, permission) {
     const participantsList = document.getElementById('participants-list');
     const divToRemove = document.getElementById('ssa');
@@ -524,6 +527,36 @@ function load_calendar() {
     }
   }
 
+  // To refetch the available group member list for Add Participant selection in event modal
+  function updateParticipantSelect(info) {
+    const group_id = document.getElementById('group-select').value;
+    $.ajax({
+      url: `/members/${group_id}`,
+      type: 'GET',
+      success: function (data) {
+        const select = $('#updateParticipantSelect');
+        select.empty().append('<option value="" disabled selected>Select a participant</option>');
+
+        const filteredData = data.filter(item1 =>
+          !info.event.extendedProps.participants.some(item2 => item1.email === item2.email)
+        );
+
+        filteredData.forEach(member => {
+          select.append(
+            $('<option></option>')
+              .val(member.email)
+              .text(member.email)
+              .attr('data-name', member.name)
+          );
+        });
+      },
+      error: function () {
+        $('#updateParticipantSelect').html('<option value="" disabled>Error loading participants</option>');
+      }
+    });
+  }
+
+  // To set up Add participant selection in event modal as per group members
   function setupParticipantsSection(info, modal, permission) {
     refreshParticipantsList(info, permission);
 
@@ -568,6 +601,7 @@ function load_calendar() {
     }
   }
 
+  // To setup event remove and save button handler in event modal 
   function setupEventActions(info, modal) {
     const group_id = document.getElementById('group-select').value;
     const group_permission = info.event.extendedProps.event_edit_permission;;
@@ -603,6 +637,7 @@ function load_calendar() {
     }
   }
 
+  // To render each participant in the event modal participant list
   function renderParticipant(info, participant, showRemoveButton, permission, externalDiv) {
     const participantElement = document.createElement('div');
     participantElement.className = 'participant';
@@ -651,12 +686,97 @@ function load_calendar() {
     externalDiv.appendChild(participantElement);
   }
 
+  // To add selected participant in event modal view participant list
+  function viewAddParticipant(info) {
+    const input = document.getElementById('updateParticipantSelect');
+    const email = input.value.trim();
+    const name = input.querySelector(`option[value="${email}"]`).dataset.name;
+
+    if (email) {
+      const optionToRemove = input.querySelector(`option[value="${email}"]`);
+      if (optionToRemove) optionToRemove.remove();
+
+      const participants = info.event.extendedProps.participants || [];
+      if (participants.length == 1) {
+        participants.forEach(p => {
+          const participantElement = document.getElementById(`participant-email-${p.email}`);
+          const removeElement = document.createElement('button');
+          removeElement.className = "modal-view-participant-remove-button";
+          removeElement.textContent = "Remove";
+          removeElement.id = `modal-view-participant-remove-button-${p.email}`;
+          participantElement.appendChild(removeElement);
+
+          const removeHandler = () => viewRemoveParticipant(info, p.email);
+          removeElement.addEventListener('click', removeHandler);
+          calendarResources.modalListeners.push({
+            element: removeElement,
+            event: 'click',
+            handler: removeHandler
+          });
+        });
+      }
+
+      const dataString = `{"name":"${name}" ,"email":"${email}" }`;
+      const data = JSON.parse(dataString);
+      participants.push(data);
+      info.event.setExtendedProp('participants', participants);
+
+      // Update the info for pending participants
+      const pending_participants = info.event.extendedProps.pending_participants || [];
+      pending_participants.push(data);
+      info.event.setExtendedProp('pending_participants', pending_participants);
+
+      const group_id = document.getElementById('group-select').value;
+      const group_permission = info.event.extendedProps.event_edit_permission;
+      refreshParticipantsList(info, group_permission);
+
+      input.value = '';
+    }
+  }
+
+  // To remove participant from the event modal view participant list
+  function viewRemoveParticipant(info, email) {
+    document.getElementById(`participant-email-${email}`)?.remove();
+    const participants = info.event.extendedProps.participants || [];
+    const updatedParticipants = participants.filter(p => p.email !== email);
+    info.event.setExtendedProp('participants', updatedParticipants);
+
+    if (updatedParticipants.length == 1) {
+      updatedParticipants.forEach(p => {
+        document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
+      });
+    }
+
+    const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
+    const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
+    const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
+
+    if (inAccepted) {
+      const accepted_participants = info.event.extendedProps.accepted_participants || [];
+      const updated_accepted_participants = accepted_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('accepted_participants', updated_accepted_participants);
+    } else if (inDecline) {
+      const declined_participants = info.event.extendedProps.declined_participants || [];
+      const updated_declined_participants = declined_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('declined_participants', updated_declined_participants);
+    } else {
+      const pending_participants = info.event.extendedProps.pending_participants || [];
+      const updated_pending_participants = pending_participants.filter(p => p.email !== email);
+      info.event.setExtendedProp('pending_participants', updated_pending_participants);
+    }
+
+    const group_id = document.getElementById('group-select').value;
+    const group_permission = info.event.extendedProps.event_edit_permission;
+    refreshParticipantsList(info, group_permission);
+  }
+
   function getDateTime(dateInput, timeInput) {
     // Combine date and time strings
     const dateTimeString = `${dateInput}T${timeInput}`;
     return dateTimeString;
   }
 
+  // To update the event information by sending PUT request to backend
   function saveViewEvent(event) {
     const eventTitle = $('#model-view-title-editable').text().trim();
 
@@ -761,6 +881,7 @@ function load_calendar() {
     }
   }
 
+  // To remove event by sending DELETE request to backend
   function removeEvent(event) {
     $('#modal-view-event').modal('hide');
     var event_id = event.extendedProps.event_id;
@@ -797,7 +918,19 @@ function load_calendar() {
       }
     });
   }
+  /* ------------------------------------------ EVENT VIEW MODAL ---------------------------------------------- */
 
+  /* ------------------------------------------ EVENT ADDITION MODAL ------------------------------------------ */
+
+  // Helper functions to get the selected participants while event creation
+  function getSelectedParticipants() {
+    const badges = document.querySelectorAll('#eventParticipantsList .badge');
+    return Array.from(badges).map(badge => ({
+      name: badge.childNodes[0].textContent.trim()
+    }));
+  }
+
+  // To Prepare the modal for event creation based on group-permission of current user
   function handleCalendarSelection(arg, group_permission) {
     const group_id = document.getElementById('group-select').value;
 
@@ -808,6 +941,7 @@ function load_calendar() {
     }
   }
 
+  // Prepares the event creation modal
   function prepareEventCreationModal(group_id, arg) {
     cleanupResources("modal");
     if (group_id == 1) {
@@ -838,6 +972,92 @@ function load_calendar() {
     $('#modal-view-event-add').modal('show');
   }
 
+  // To facilitate selection of participants in event creation based on group members
+  function showParticipants() {
+    const container = document.getElementById('eventParticipantsList');
+    container.innerHTML = '';
+
+    const userEmail = document.querySelector('meta[name="user-email"]').content;
+    const currentUser = document.createElement('span');
+    currentUser.className = 'badge d-flex align-items-center';
+    currentUser.style = 'background:rgb(30, 18, 82);';
+    currentUser.innerHTML = userEmail;
+    container.appendChild(currentUser);
+
+    // Add participants for events functionality
+    const participants = [];
+
+    const addHandler = () => addParticipant();
+    $('#addParticipantBtn').off('click').on('click', addHandler);
+    calendarResources.modalListeners.push({
+      element: $('#addParticipantBtn'),
+      event: 'click',
+      handler: addHandler
+    });
+
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addParticipant();
+      }
+    };
+    const selectInput = document.getElementById('participantSelect');
+    if (selectInput) {
+      selectInput.addEventListener('keypress', keyHandler);
+      calendarResources.modalListeners.push({
+        element: selectInput,
+        event: 'keypress',
+        handler: keyHandler
+      });
+    }
+
+    function addParticipant() {
+      const input = document.getElementById('participantSelect');
+      const name = input.value.trim();
+
+      if (name && !participants.includes(name)) {
+        participants.push(name);
+        renderParticipantsList();
+        input.value = '';
+      }
+    }
+
+    function removeParticipant(name) {
+      const index = participants.indexOf(name);
+      if (index !== -1) {
+        participants.splice(index, 1);
+        renderParticipantsList();
+      }
+    }
+
+    function renderParticipantsList() {
+      const container = document.getElementById('eventParticipantsList');
+      container.innerHTML = '';
+
+      const userEmail = document.querySelector('meta[name="user-email"]').content;
+      const currentUser = document.createElement('span');
+      currentUser.className = 'badge d-flex align-items-center';
+      currentUser.style = 'background:rgb(30, 18, 82);'
+      currentUser.innerHTML = `${userEmail}`;
+      container.appendChild(currentUser);
+
+      participants.forEach(name => {
+        const badge = document.createElement('span');
+        badge.className = 'badge d-flex align-items-center';
+        badge.style = 'background:rgb(30, 18, 82);'
+        badge.innerHTML = `
+                ${name}
+                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
+            `;
+        container.appendChild(badge);
+
+        // Add event listener to remove button
+        badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
+      });
+    }
+  }
+
+  // Send the new event information to add_event API
   function saveCalendarEvent(e, calendar) {
     e.preventDefault();
 
@@ -923,200 +1143,7 @@ function load_calendar() {
     }
   }
 
-  // Participant management functions
-  function updateParticipantSelect(info) {
-    const group_id = document.getElementById('group-select').value;
-    $.ajax({
-      url: `/members/${group_id}`,
-      type: 'GET',
-      success: function (data) {
-        const select = $('#updateParticipantSelect');
-        select.empty().append('<option value="" disabled selected>Select a participant</option>');
-
-        const filteredData = data.filter(item1 =>
-          !info.event.extendedProps.participants.some(item2 => item1.email === item2.email)
-        );
-
-        filteredData.forEach(member => {
-          select.append(
-            $('<option></option>')
-              .val(member.email)
-              .text(member.email)
-              .attr('data-name', member.name)
-          );
-        });
-      },
-      error: function () {
-        $('#updateParticipantSelect').html('<option value="" disabled>Error loading participants</option>');
-      }
-    });
-  }
-
-  function viewAddParticipant(info) {
-    const input = document.getElementById('updateParticipantSelect');
-    const email = input.value.trim();
-    const name = input.querySelector(`option[value="${email}"]`).dataset.name;
-
-    if (email) {
-      const optionToRemove = input.querySelector(`option[value="${email}"]`);
-      if (optionToRemove) optionToRemove.remove();
-
-      const participants = info.event.extendedProps.participants || [];
-      if (participants.length == 1) {
-        participants.forEach(p => {
-          const participantElement = document.getElementById(`participant-email-${p.email}`);
-          const removeElement = document.createElement('button');
-          removeElement.className = "modal-view-participant-remove-button";
-          removeElement.textContent = "Remove";
-          removeElement.id = `modal-view-participant-remove-button-${p.email}`;
-          participantElement.appendChild(removeElement);
-
-          const removeHandler = () => viewRemoveParticipant(info, p.email);
-          removeElement.addEventListener('click', removeHandler);
-          calendarResources.modalListeners.push({
-            element: removeElement,
-            event: 'click',
-            handler: removeHandler
-          });
-        });
-      }
-
-      const dataString = `{"name":"${name}" ,"email":"${email}" }`;
-      const data = JSON.parse(dataString);
-      participants.push(data);
-      info.event.setExtendedProp('participants', participants);
-
-      // Update the info for pending participants
-      const pending_participants = info.event.extendedProps.pending_participants || [];
-      pending_participants.push(data);
-      info.event.setExtendedProp('pending_participants', pending_participants);
-
-      const group_id = document.getElementById('group-select').value;
-      const group_permission = info.event.extendedProps.event_edit_permission;
-      refreshParticipantsList(info, group_permission);
-
-      input.value = '';
-    }
-  }
-
-  function viewRemoveParticipant(info, email) {
-    document.getElementById(`participant-email-${email}`)?.remove();
-    const participants = info.event.extendedProps.participants || [];
-    const updatedParticipants = participants.filter(p => p.email !== email);
-    info.event.setExtendedProp('participants', updatedParticipants);
-
-    if (updatedParticipants.length == 1) {
-      updatedParticipants.forEach(p => {
-        document.getElementById(`modal-view-participant-remove-button-${p.email}`)?.remove();
-      });
-    }
-
-    const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
-    const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
-    const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
-
-    if (inAccepted) {
-      const accepted_participants = info.event.extendedProps.accepted_participants || [];
-      const updated_accepted_participants = accepted_participants.filter(p => p.email !== email);
-      info.event.setExtendedProp('accepted_participants', updated_accepted_participants);
-    } else if (inDecline) {
-      const declined_participants = info.event.extendedProps.declined_participants || [];
-      const updated_declined_participants = declined_participants.filter(p => p.email !== email);
-      info.event.setExtendedProp('declined_participants', updated_declined_participants);
-    } else {
-      const pending_participants = info.event.extendedProps.pending_participants || [];
-      const updated_pending_participants = pending_participants.filter(p => p.email !== email);
-      info.event.setExtendedProp('pending_participants', updated_pending_participants);
-    }
-
-    const group_id = document.getElementById('group-select').value;
-    const group_permission = info.event.extendedProps.event_edit_permission;
-    refreshParticipantsList(info, group_permission);
-  }
-
-  function showParticipants() {
-    const container = document.getElementById('eventParticipantsList');
-    container.innerHTML = '';
-
-    const userEmail = document.querySelector('meta[name="user-email"]').content;
-    const currentUser = document.createElement('span');
-    currentUser.className = 'badge d-flex align-items-center';
-    currentUser.style = 'background:rgb(30, 18, 82);';
-    currentUser.innerHTML = userEmail;
-    container.appendChild(currentUser);
-
-    // Add participants for events functionality
-    const participants = [];
-
-    const addHandler = () => addParticipant();
-    $('#addParticipantBtn').off('click').on('click', addHandler);
-    calendarResources.modalListeners.push({
-      element: $('#addParticipantBtn'),
-      event: 'click',
-      handler: addHandler
-    });
-
-    const keyHandler = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addParticipant();
-      }
-    };
-    const selectInput = document.getElementById('participantSelect');
-    if (selectInput) {
-      selectInput.addEventListener('keypress', keyHandler);
-      calendarResources.modalListeners.push({
-        element: selectInput,
-        event: 'keypress',
-        handler: keyHandler
-      });
-    }
-
-    function addParticipant() {
-      const input = document.getElementById('participantSelect');
-      const name = input.value.trim();
-
-      if (name && !participants.includes(name)) {
-        participants.push(name);
-        renderParticipantsList();
-        input.value = '';
-      }
-    }
-
-    function removeParticipant(name) {
-      const index = participants.indexOf(name);
-      if (index !== -1) {
-        participants.splice(index, 1);
-        renderParticipantsList();
-      }
-    }
-
-    function renderParticipantsList() {
-      const container = document.getElementById('eventParticipantsList');
-      container.innerHTML = '';
-
-      const userEmail = document.querySelector('meta[name="user-email"]').content;
-      const currentUser = document.createElement('span');
-      currentUser.className = 'badge d-flex align-items-center';
-      currentUser.style = 'background:rgb(30, 18, 82);'
-      currentUser.innerHTML = `${userEmail}`;
-      container.appendChild(currentUser);
-
-      participants.forEach(name => {
-        const badge = document.createElement('span');
-        badge.className = 'badge d-flex align-items-center';
-        badge.style = 'background:rgb(30, 18, 82);'
-        badge.innerHTML = `
-                ${name}
-                <button type="button" class="btn-close btn-close-white ms-2" aria-label="Remove" data-name="${name}"></button>
-            `;
-        container.appendChild(badge);
-
-        // Add event listener to remove button
-        badge.querySelector('button').addEventListener('click', () => removeParticipant(name));
-      });
-    }
-  }
+  /* ------------------------------------------ EVENT ADDITION MODAL ------------------------------------------ */
 
   checkInvt.addEventListener('click', check_invites);
   // Create check invite modal functionality
@@ -1402,14 +1429,6 @@ function load_calendar() {
         }
       });
     }
-  }
-
-  // Helper functions
-  function getSelectedParticipants() {
-    const badges = document.querySelectorAll('#eventParticipantsList .badge');
-    return Array.from(badges).map(badge => ({
-      name: badge.childNodes[0].textContent.trim()
-    }));
   }
 
   function showError(fieldId, message) {
