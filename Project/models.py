@@ -33,20 +33,29 @@ class Event(db.Model):
     end_time = db.Column(db.DateTime(timezone=True), nullable=False)
     event_name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(1000))
-    version_number = db.Column(db.Integer, nullable=False)
+    version_number = db.Column(db.Integer, nullable=False, default=1)
+    cache_number = db.Column(db.Integer, nullable=False)
     creator = db.Column(db.Integer, db.ForeignKey('user.user_id'))
     group_id = db.Column(db.Integer, db.ForeignKey('group.group_id'))
     
     participations = db.relationship('Participate', backref='event', lazy=True)
 
+    __mapper_args__ = {
+        'version_id_col': version_number
+    }
+
 class Group(db.Model):
     group_id = db.Column(db.Integer, primary_key=True)
     group_name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(1000))
-    version_number = db.Column(db.Integer, nullable=False)
+    version_number = db.Column(db.Integer, nullable=False, default=1)
     
     members = db.relationship('Member', backref='group', lazy=True)
     events = db.relationship('Event', backref='host_group', lazy=True)
+
+    __mapper_args__ = {
+        'version_id_col': version_number
+    }
 
 class Participate(db.Model):
     participate_id = db.Column(db.Integer, primary_key=True)

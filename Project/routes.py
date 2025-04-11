@@ -4,7 +4,9 @@ from flask_login import login_user,login_required,current_user,logout_user
 from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
-from sqlalchemy import func
+from sqlalchemy import func, update, exists
+from sqlalchemy.orm.exc import StaleDataError
+from sqlalchemy.orm.attributes import flag_modified
 from Project import app,db
 from datetime import datetime, timezone, timedelta
 import json
@@ -116,8 +118,7 @@ def create_group():
         try:
             newGroup = Group(
                 group_name = group['name'],
-                description = group['description'],
-                version_number = 0
+                description = group['description']
             )
             db.session.add(newGroup)
             db.session.flush()
@@ -250,6 +251,11 @@ def check_invites():
                 group_id = invite.event.group_id
                 invite.status = response['status']
                 invite.read_status = 'Read'
+                db.session.execute(
+                    update(Event)
+                    .where(Event.event_id == invite.event_id)
+                    .values(cache_number = Event.cache_number + 1)
+                )
             db.session.commit()
         except:
             db.session.rollback()
@@ -405,8 +411,7 @@ def return_data(group_id):
         if group is None:
             newGroup = Group(
                 group_name = 'No Group',
-                description = 'No Description',
-                version_number = 0
+                description = 'No Description'
             )
             
             try:
@@ -438,7 +443,8 @@ def return_data(group_id):
                 'event_type': 'individual',
                 'is_pending_for_current_user': False,
                 'event_edit_permission': 'Admin',
-                'version':event.cache_number
+                'version': event.version_number,
+                'cache_number': event.cache_number
             })
             
         group_events = (
@@ -535,7 +541,8 @@ def return_data(group_id):
                 'declined_participants':declined_participants,
                 'is_pending_for_current_user': is_pending,
                 'event_edit_permission': 'Viewer',
-                'version':event.cache_number
+                'version': event.version_number,
+                'cache_number': event.cache_number
             })
             
     else:
@@ -636,7 +643,8 @@ def return_data(group_id):
                 'declined_participants': declined_participants,
                 'is_pending_for_current_user': is_pending,
                 'event_edit_permission': permission,
-                'version':event.cache_number
+                'version': event.version_number,
+                'cache_number':event.cache_number
             })
     return jsonify(events_data)
 
@@ -649,7 +657,7 @@ def return_update_data(group_id):
     cached_events = []
     for element in versionMap['events']:
         cached_events.append(element['event_id'])
-    version_map = {item['event_id']: item['version'] for item in versionMap['events']}
+    version_map = {item['event_id']: item['cache_number'] for item in versionMap['events']}
      
     if group_id == 1:
         # Get all the events from the database created by current user
@@ -685,7 +693,8 @@ def return_update_data(group_id):
                 'event_type': 'individual',
                 'is_pending_for_current_user': False,
                 'event_edit_permission': 'Admin',
-                'version':event.cache_number
+                'version': event.version_number,
+                'cache_number':event.cache_number
             })
             
         group_events = (
@@ -785,7 +794,8 @@ def return_update_data(group_id):
                     'declined_participants':declined_participants,
                     'is_pending_for_current_user': is_pending,
                     'event_edit_permission': 'Viewer',
-                    'version':event.cache_number
+                    'version': event.version_number,
+                    'cache_number':event.cache_number
                 })
       
         for cached_event_id in cached_events:
@@ -904,7 +914,8 @@ def return_update_data(group_id):
                     'declined_participants': declined_participants,
                     'is_pending_for_current_user': is_pending,
                     'event_edit_permission': permission,
-                    'version':event.cache_number
+                    'version': event.version_number,
+                    'cache_number':event.cache_number
                 })
     
     return jsonify({
@@ -966,6 +977,7 @@ def get_info(group_id):
         } for member in members]
 
         return jsonify({
+            'version': group.version_number,
             'name': group.group_name,
             'description': group.description,
             'members': members_list,
@@ -997,9 +1009,14 @@ def get_info(group_id):
             return jsonify({'error': 'Access denied'}), 403
         group_info = request.get_json()
         try:
+            # Check version number
+            if group.version_number != group_info['version']:
+                return jsonify({'error': "Conflicting Update"}), 409
+
             # Update basic group info
             group.group_name = group_info['name']
             group.description = group_info['description']
+            flag_modified(group, "description")
             
             # Handle member changes
             current_members = {m.user_id: m for m in Member.query.filter_by(group_id=group_id).all()}
@@ -1030,6 +1047,18 @@ def get_info(group_id):
                 user = users_cache[email]
                 if user and user.user_id in current_members:
                     current_members[user.user_id].permission = updated_mem['role']
+                    # increment cache_number for all events in this group in which user participates, 
+                    db.session.execute(
+                        update(Event)
+                        .where(
+                            Event.group_id == group_id,
+                            exists().where(
+                                Participate.event_id == Event.event_id,
+                                Participate.user_id == user.user_id
+                            )
+                        )
+                        .values(cache_number=Event.cache_number + 1)
+                    )
             
             # Process deleted members
             for deleted_mem in group_info['deleted_members']:
@@ -1038,6 +1067,18 @@ def get_info(group_id):
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
                 if user and user.user_id in current_members:
+                    # increment cache_number for all events in this group in which user participates, 
+                    db.session.execute(
+                        update(Event)
+                        .where(
+                            Event.group_id == group_id,
+                            exists().where(
+                                Participate.event_id == Event.event_id,
+                                Participate.user_id == user.user_id
+                            )
+                        )
+                        .values(cache_number=Event.cache_number + 1)
+                    )
                     Participate.query.filter(
                         Participate.event.has(group_id=group_id),
                         Participate.user_id == user.user_id
@@ -1046,10 +1087,15 @@ def get_info(group_id):
                     db.session.delete(current_members[user.user_id])
             
             db.session.commit()
+            return jsonify({'emails': invalid_emails, 'version': group.version_number}), 200
+        
+        except StaleDataError:
+            db.session.rollback()
+            return jsonify({'error': "Conflicting Update"}), 409
+        
         except:
             db.session.rollback()
             return jsonify({'error': "Unable to update group info"}), 500
-        return jsonify({'emails': invalid_emails}), 200
 
 # To get the group permission info
 @app.route('/get_group_permission/<int:group_id>', methods=['GET'])
@@ -1096,8 +1142,7 @@ def add_event():
     if group is None:
         newGroup = Group(
             group_name = 'No Group',
-            description = 'No Description',
-            version_number = 0
+            description = 'No Description'
         )
         
         try:
@@ -1171,78 +1216,81 @@ def update_event(event_id):
     if not event:
         return jsonify({'error' : 'Event not found'}), 404
     
-    if event.group_id != 1:
-        # Check if the user has the permission to add the event
-        mem = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first()
-        if not mem:
-            return jsonify({'error': 'Access denied'}), 403
-        permission = mem.permission
-        if permission == 'Viewer':
-            return jsonify({'error': 'Permission denied'}), 403
-        
-    event.event_name = new_event['title']
-    event.description = new_event['description']
-    event.start_time = datetime.fromisoformat(new_event['start'])
-    event.end_time = datetime.fromisoformat(new_event['end'])
+    if event.version_number != new_event['version']:
+        return jsonify({'error': "Conflicting Update"}), 409
     
-    # Access added_participants 
-    # (not present in the original Pending list but present in the current pending participant list) : new_event['added_participants']
-    
-    # Access deleted_participants
-    # (present in the original list, but not present now, including earlier pending participants that are not present now) : new_event['deleted_participants']
-    
-    # These changes are present inside load_calendar -> eventClick -> saveViewEvent (Refer in case of confusion)
-    
-    if event.group_id != 1:
-        accepted_participants = []
-        declined_participants = []
-        pending_participants = []
-        
-        for participant in event.participations:
-            if participant.status == 'Accepted':
-                accepted_participants.append(participant)
-            elif participant.status == 'Declined':
-                declined_participants.append(participant)
-            else:
-                pending_participants.append(participant)
-        
-        new_accepted_participants_email = []
-        for element in new_event['accepted_participants']:
-            new_accepted_participants_email.append(element['email'])
-        new_declined_participants_email = []
-        for element in new_event['declined_participants']:
-            new_declined_participants_email.append(element['email'])
-        new_pending_participants_email = []
-        for element in new_event['pending_participants']:
-            new_pending_participants_email.append(element['email'])
-                
-        # Update Accepted participants for the event
-        for participant in accepted_participants:
-            participant_email = User.query.filter_by(user_id=participant.user_id).first().email
-            if participant_email not in new_accepted_participants_email:
-                db.session.delete(participant)
-                
-        # Update Declined participants for the event
-        for participant in declined_participants:
-            participant_email = User.query.filter_by(user_id=participant.user_id).first().email
-            if participant_email not in new_declined_participants_email:
-                db.session.delete(participant)
-        
-        # Update Pending participants for the event
-        for participant in pending_participants: 
-            db.session.delete(participant)
-        
-        for participant_email in new_pending_participants_email:
-            participant = Participate(
-                user_id = User.query.filter_by(email=participant_email.lower()).first().user_id,
-                event_id = event_id
+    if event.group_id == 1:
+        try:
+            event.event_name = new_event['title']
+            event.description = new_event['description']
+            event.start_time = datetime.fromisoformat(new_event['start'])
+            event.end_time = datetime.fromisoformat(new_event['end'])
+            db.session.execute(
+                update(Event)
+                .where(Event.event_id == event_id)
+                .values(cache_number = Event.cache_number + 1)
             )
-            db.session.add(participant)
+            db.session.commit() 
+            return jsonify({'message': 'Event updated successfully'}), 200
+        
+        except StaleDataError:
+            db.session.rollback()
+            return jsonify({'error': "Conflicting Update"}), 409
+        
+        except:
+            db.session.rollback()
+            return jsonify({'error' : 'Unable to update event'}), 500
+    
+    # Check if the user has the permission to add the event
+    mem = Member.query.filter_by(user_id=current_user.user_id, group_id=event.group_id).first()
+    if not mem:
+        return jsonify({'error': 'Access denied'}), 403
+    permission = mem.permission
+    if permission == 'Viewer':
+        return jsonify({'error': 'Permission denied'}), 403
     
     try:
+        event.event_name = new_event['title']
+        event.description = new_event['description']
+        event.start_time = datetime.fromisoformat(new_event['start'])
+        event.end_time = datetime.fromisoformat(new_event['end'])
+        db.session.execute(
+            update(Event)
+            .where(Event.event_id == event_id)
+            .values(cache_number = Event.cache_number + 1)
+        )
+        flag_modified(event, "cache_number")
+
+        for email in new_event['added_participants']:
+            user = User.query.filter_by(email=email.lower()).first()
+            if user:
+                participant = Participate(
+                    user_id = user.user_id,
+                    event_id = event_id
+                )
+                db.session.add(participant)
+        
+        for email in new_event['changed_participants']:
+            user = User.query.filter_by(email=email.lower()).first()
+            if user:
+                participant = Participate.query.filter_by(user_id=user.user_id, event_id=event_id).first()
+                if participant:
+                    participant.status = 'Pending'
+        
+        for email in new_event['deleted_participants']:
+            user = User.query.filter_by(email=email.lower()).first()
+            if user:
+                participant = Participate.query.filter_by(user_id=user.user_id, event_id=event_id).first()
+                if participant:
+                    db.session.delete(participant)
+
         db.session.commit() 
         return jsonify({'message': 'Event updated successfully'}), 200
     
-    except Exception as e:
+    except StaleDataError:
+            db.session.rollback()
+            return jsonify({'error': "Conflicting Update"}), 409
+    
+    except:
         db.session.rollback()
-        return jsonify({'error' : str(e)}), 500
+        return jsonify({'error' : 'Unable to update event'}), 500

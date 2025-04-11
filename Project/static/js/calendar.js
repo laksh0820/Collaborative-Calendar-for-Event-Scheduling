@@ -233,7 +233,7 @@ function load_calendar() {
         // 1. Prepare version map from cache
         const versionMap = cachedData.map(event => ({
           event_id: event.event_id,
-          version: event.version
+          cache_number: event.cache_number
         }));
 
         // 2. Request only updated events
@@ -723,7 +723,6 @@ function load_calendar() {
 
         const inAccepted = info.event.extendedProps.accepted_participants.find(user => user.email === email) !== undefined;
         const inDecline = info.event.extendedProps.declined_participants.find(user => user.email === email) !== undefined;
-        const inPending = info.event.extendedProps.pending_participants.find(user => user.email === email) !== undefined;
 
         if (inAccepted) {
           const accepted_participants = info.event.extendedProps.accepted_participants || [];
@@ -788,9 +787,7 @@ function load_calendar() {
           isValid = false;
           return;
         }
-        else if (d1 < d2) {
-        }
-        else {
+        else if (d1 == d2) {
           if (sdate.getHours() > edate.getHours()) {
             showError('view-event-end-time', 'End time must be after start time');
             isValid = false;
@@ -808,29 +805,28 @@ function load_calendar() {
         if (isValid) {
           $('#modal-view-event').modal('hide');
 
-          /* 
-            Find newly added participants (not present in the original Pending 
-            list but present in the current pending participant list)
-          */
           let added_participants = [];
+          let changed_participants = [];
           const currentPendingParticipants = event.extendedProps.pending_participants;
           currentPendingParticipants.forEach(participant => {
             const isOriginalPending = originalPendingParticipants.some(item => item.email === participant.email);
             if (!isOriginalPending) {
-              added_participants.push(participant);
+              const wasOriginalParticipant = originalParticipants.some(item => item.email === participant.email);
+              if (wasOriginalParticipant) {
+                changed_participants.push(participant.email);
+              }
+              else {
+                added_participants.push(participant.email);
+              }
             }
           });
 
-          /* 
-            Find deleted participants (present in the original list, but not present now, 
-            including earlier pending participants that are not present now)
-          */
           let deleted_participants = [];
           const currentParticipant = event.extendedProps.participants;
           originalParticipants.forEach(participant => {
             const isCurrentParticpant = currentParticipant.some(item => item.email === participant.email);
             if (!isCurrentParticpant) {
-              deleted_participants.push(participant);
+              deleted_participants.push(participant.email);
             }
           });
           
@@ -839,24 +835,18 @@ function load_calendar() {
             type: 'PUT',
             contentType: 'application/json',
             data: JSON.stringify({
+              version: event.extendedProps.version,
               title: eventTitle,
               start: eventStart,
               end: eventEnd,
               description: description,
-              accepted_participants: event.extendedProps.accepted_participants,
-              declined_participants: event.extendedProps.declined_participants,
-              pending_participants: event.extendedProps.pending_participants,
               added_participants: added_participants,
+              changed_participants: changed_participants,
               deleted_participants: deleted_participants
             }),
             success: function (response) {
               // Clear cache when group changes
               const group_id = document.getElementById('group-select').value;
-              calendarCache.clear(group_id);
-              if (group_id !== 1) {
-                // Clear cache of the dashboard as it might have changed due to group event
-                calendarCache.clear(1);
-              }
               calendar.removeAllEvents();
               cleanupResources("all");
               calendar.refetchEvents();
@@ -1177,11 +1167,6 @@ function load_calendar() {
             success: function (response) {
               // Clear cache when group changes
               const group_id = document.getElementById('group-select').value;
-              calendarCache.clear(group_id);
-              if (group_id !== 1) {
-                // Clear cache of the dashboard as it might have changed due to group event
-                calendarCache.clear(1);
-              }
               calendar.removeAllEvents();
               cleanupResources("all");
               calendar.refetchEvents();
@@ -1450,8 +1435,6 @@ function load_calendar() {
           else {
             // Event invites accepted / rejected
             // If it is a invite for a event, we need to refresh group as well as dashboard events
-            calendarCache.clear(response.group_id);
-            calendarCache.clear(1);
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
@@ -1546,6 +1529,7 @@ function load_calendar() {
     }
     let isAdmin = false;
     var curr_email;
+    var version;
     $.ajax({
       url: `/group_info/${groupId}`,
       type: 'GET',
@@ -1555,6 +1539,7 @@ function load_calendar() {
           description: groupData['description'],
           members: groupData['members']
         };
+        version = groupData['version'];
         curr_email = groupData['curr_email'];
         isAdmin = groupData['authorization'];
         originalData.members = originalData.members.sort((a, b) => {
@@ -1881,17 +1866,19 @@ function load_calendar() {
         type: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify({
+          version: version,
           name: currentData.name,
           description: currentData.description,
           new_members: new_members,
           deleted_members: deleted_members,
           updated_members: updated_members
         }),
-        success: function (invalidData) {
+        success: function (data) {
+          version = data['version'];
           showFlashMessage('success', 'Group updated successfully');
           originalData = { ...currentData };
           originalData.members = members
-            .filter(member => !(invalidData['emails'].includes(member.email.toLowerCase())))
+            .filter(member => !(data['emails'].includes(member.email.toLowerCase())))
             .map(member => ({ ...member }))
             .sort((a, b) => {
               // If current user is admin, put them first
@@ -1903,8 +1890,8 @@ function load_calendar() {
             });
           members = originalData.members.map(member => ({ ...member }));
 
-          if (invalidData['emails'].length > 0)
-            alert("No users found corresponding to:\n" + invalidData['emails'].join("\n"));
+          if (data['emails'].length > 0)
+            alert("No users found corresponding to:\n" + data['emails'].join("\n"));
           checkForChanges();
           renderMembersList();
           if (name_changed) {
@@ -1913,8 +1900,6 @@ function load_calendar() {
           if (members_changed) {
             // Clear cache when group changes
             const group_id = document.getElementById('group-select').value;
-            calendarCache.clear(group_id);
-            calendarCache.clear(1);
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
@@ -1953,7 +1938,6 @@ function load_calendar() {
 
           if (refreshEvents) {
             // Refresh the events in dashboard
-            calendarCache.clear(1);
             calendar.removeAllEvents();
             cleanupResources("all");
             calendar.refetchEvents();
