@@ -132,7 +132,7 @@ def create_group():
             ))
             
             for i in range(len(group['members'])):
-                email = group['members'][i].lower()
+                email = group['members'][i].strip().lower()
                 if email == current_user.email:
                     continue
                 user = User.query.filter_by(email=email).first()
@@ -1025,7 +1025,7 @@ def get_info(group_id):
             
             # Process new members
             for new_mem in group_info['new_members']:
-                email = new_mem['email'].lower()
+                email = new_mem['email'].strip().lower()
                 if email not in users_cache:
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
@@ -1041,7 +1041,7 @@ def get_info(group_id):
             
             # Process updated members
             for updated_mem in group_info['updated_members']:
-                email = updated_mem['email'].lower()
+                email = updated_mem['email'].strip().lower()
                 if email not in users_cache:
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
@@ -1062,7 +1062,7 @@ def get_info(group_id):
             
             # Process deleted members
             for deleted_mem in group_info['deleted_members']:
-                email = deleted_mem['email'].lower()
+                email = deleted_mem['email'].strip().lower()
                 if email not in users_cache:
                     users_cache[email] = User.query.filter_by(email=email).first()
                 user = users_cache[email]
@@ -1158,7 +1158,7 @@ def add_event():
             
         for participantEmail in participantsEmail:
             participant = Participate(
-                user_id = User.query.filter_by(email=participantEmail.lower()).first().user_id,
+                user_id = User.query.filter_by(email=participantEmail.strip().lower()).first().user_id,
                 event_id = newEvent.event_id
             )
             if participantEmail == current_user.email:
@@ -1262,7 +1262,7 @@ def update_event(event_id):
         flag_modified(event, "cache_number")
 
         for email in new_event['added_participants']:
-            user = User.query.filter_by(email=email.lower()).first()
+            user = User.query.filter_by(email=email.strip().lower()).first()
             if user:
                 participant = Participate(
                     user_id = user.user_id,
@@ -1271,14 +1271,14 @@ def update_event(event_id):
                 db.session.add(participant)
         
         for email in new_event['changed_participants']:
-            user = User.query.filter_by(email=email.lower()).first()
+            user = User.query.filter_by(email=email.strip().lower()).first()
             if user:
                 participant = Participate.query.filter_by(user_id=user.user_id, event_id=event_id).first()
                 if participant:
                     participant.status = 'Pending'
         
         for email in new_event['deleted_participants']:
-            user = User.query.filter_by(email=email.lower()).first()
+            user = User.query.filter_by(email=email.strip().lower()).first()
             if user:
                 participant = Participate.query.filter_by(user_id=user.user_id, event_id=event_id).first()
                 if participant:

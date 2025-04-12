@@ -332,8 +332,8 @@ function load_calendar() {
       }
 
       // Store initial set of participants
-      const originalParticipants = [...info.event.extendedProps.participants];
-      const originalPendingParticipants = [...info.event.extendedProps.pending_participants];
+      const originalParticipants = info.event.extendedProps.participants ? [...info.event.extendedProps.participants] : [];
+      const originalPendingParticipants = info.event.extendedProps.pending_participants ? [...info.event.extendedProps.pending_participants] : [];
 
       showEventModal(info);
 
@@ -807,7 +807,7 @@ function load_calendar() {
 
           let added_participants = [];
           let changed_participants = [];
-          const currentPendingParticipants = event.extendedProps.pending_participants;
+          const currentPendingParticipants = event.extendedProps.pending_participants || [];
           currentPendingParticipants.forEach(participant => {
             const isOriginalPending = originalPendingParticipants.some(item => item.email === participant.email);
             if (!isOriginalPending) {
@@ -822,7 +822,7 @@ function load_calendar() {
           });
 
           let deleted_participants = [];
-          const currentParticipant = event.extendedProps.participants;
+          const currentParticipant = event.extendedProps.participants || [];
           originalParticipants.forEach(participant => {
             const isCurrentParticpant = currentParticipant.some(item => item.email === participant.email);
             if (!isCurrentParticpant) {
