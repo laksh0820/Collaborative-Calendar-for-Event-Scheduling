@@ -57,7 +57,7 @@ def signin():
     form = SignInForm()
     
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user:
             if check_password_hash(user.password,str(form.password.data)):
                 login_user(user,remember=form.remember_me.data)
@@ -74,12 +74,12 @@ def signin():
 def signup():
     form = SignUpForm()
     if form.validate_on_submit():
-        user_email = User.query.filter_by(email=form.email.data.lower()).first()
+        user_email = User.query.filter_by(email=form.email.data.strip().lower()).first()
 
         if (user_email is None):
             newUser = User(
-                name = form.name.data,
-                email = form.email.data.lower(),
+                name = form.name.data.strip(),
+                email = form.email.data.strip().lower(),
                 password = generate_password_hash(str(form.password.data))
             )
             try:

@@ -100,7 +100,7 @@ let checkInvt = document.querySelector('#check-invites-link');
 // Helper functions
 function getInitials(name) {
   if (!name) return '';
-  const parts = name.split(' ');
+  const parts = name.split(' ').filter(part => part.length > 0);
   return parts.map(part => part[0].toUpperCase()).join('').substring(0, 2);
 }
 
@@ -409,11 +409,11 @@ function load_calendar() {
             document.getElementById("model-view-title-editable").setAttribute('contenteditable', 'false');
             document.getElementById("model-view-description-editable").setAttribute('contenteditable', 'false');
           }
-          setupParticipantsSection(info, modal, group_permission);
+          setupParticipantsSection(info, group_permission);
         } else {
           if (info.event.extendedProps.event_type === 'group') {
             document.getElementById("participants-section").style.display = 'block';
-            setupParticipantsSection(info, modal, 'Viewer');
+            setupParticipantsSection(info, 'Viewer');
             document.getElementById("modal-view-add-participant-select").style.display = 'none';
             document.getElementById('view-event-start-date').readOnly = true;
             document.getElementById('view-event-start-time').readOnly = true;
@@ -436,7 +436,7 @@ function load_calendar() {
           }
         }
 
-        setupEventActions(info, modal);
+        setupEventActions(info);
 
         info.jsEvent.preventDefault();
         modal.show();
@@ -531,7 +531,7 @@ function load_calendar() {
       }
 
       // To set up Add participant selection in event modal as per group members
-      function setupParticipantsSection(info, modal, permission) {
+      function setupParticipantsSection(info, permission) {
         refreshParticipantsList(info, permission);
 
         if (permission !== 'Viewer') {
@@ -576,7 +576,7 @@ function load_calendar() {
       }
 
       // To setup event remove and save button handler in event modal 
-      function setupEventActions(info, modal) {
+      function setupEventActions(info) {
         const group_id = document.getElementById('group-select').value;
         const group_permission = info.event.extendedProps.event_edit_permission;;
 
@@ -690,7 +690,7 @@ function load_calendar() {
             });
           }
 
-          const dataString = `{"name":"${name}" ,"email":"${email}" }`;
+          const dataString = `{"name":"${name}", "email":"${email}" }`;
           const data = JSON.parse(dataString);
           participants.push(data);
           info.event.setExtendedProp('participants', participants);
