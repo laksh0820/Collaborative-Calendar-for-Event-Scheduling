@@ -1268,6 +1268,9 @@ def update_event(event_id):
                     user_id = user.user_id,
                     event_id = event_id
                 )
+                if user.user_id == current_user.user_id:
+                    participant.status = 'Accepted'
+                    participant.read_status = 'Read'
                 db.session.add(participant)
         
         for email in new_event['changed_participants']:
@@ -1275,7 +1278,10 @@ def update_event(event_id):
             if user:
                 participant = Participate.query.filter_by(user_id=user.user_id, event_id=event_id).first()
                 if participant:
-                    participant.status = 'Pending'
+                    if user.user_id == current_user.user_id:
+                        participant.status = 'Accepted'
+                    else:
+                        participant.status = 'Pending'
         
         for email in new_event['deleted_participants']:
             user = User.query.filter_by(email=email.strip().lower()).first()
