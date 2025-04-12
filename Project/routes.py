@@ -355,7 +355,7 @@ def get_notifications():
                 notification = Participate.query.filter_by(event_id=response['id'], user_id=current_user.user_id).first()
             notification.read_status = 'Read'
             db.session.commit()
-            return jsonify(success=True)
+            return jsonify(success=True), 200
         except:
             db.session.rollback()
             return jsonify({'error': "Unable to edit read status"}), 500
@@ -400,10 +400,9 @@ def get_calendar():
     return render_template('calendar.html',groups=groups)
 
 # To get the events for the group or individual
-@app.route('/data/<group_id>')
+@app.route('/data/<int:group_id>')
 @login_required
 def return_data(group_id):
-    group_id = int(group_id)
     if group_id == 1:
         # To see whether a Group 1 exits (to validate foreign key)
         group = Group.query.filter_by(group_id=1).first()
@@ -924,10 +923,9 @@ def return_update_data(group_id):
     })
 
 # To get the members of the group
-@app.route('/members/<group_id>')
+@app.route('/members/<int:group_id>')
 @login_required
 def get_members(group_id):
-    group_id = int(group_id)
     if group_id != 1:
         mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
         if not mem:
@@ -950,10 +948,9 @@ def get_members(group_id):
     return jsonify(members_list)
 
 # To get, delete or update the group info
-@app.route('/group_info/<group_id>', methods=['GET','DELETE','PUT'])
+@app.route('/group_info/<int:group_id>', methods=['GET','DELETE','PUT'])
 @login_required
 def get_info(group_id):
-    group_id = int(group_id)
     group = Group.query.filter_by(group_id=group_id).first()
     if not group:
         return jsonify({'error': 'Group not found'}), 404
@@ -1001,8 +998,8 @@ def get_info(group_id):
             db.session.commit()
         except:
             db.session.rollback()
-            return jsonify({'error': "Unable to delete group from the database"}), 500
-        return jsonify(success=True)
+            return jsonify({'error': "Unable to delete group"}), 500
+        return jsonify(success=True), 200
 
     else:
         if permission != 'Admin':
@@ -1202,9 +1199,9 @@ def remove_event(event_id):
         db.session.commit()
         return jsonify({'message': 'Event deleted successfully'}), 200
         
-    except Exception as e:
+    except:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': "Unable to delete event"}), 500
 
 
 @app.route('/update_event/<int:event_id>', methods=['PUT'])
@@ -1300,3 +1297,33 @@ def update_event(event_id):
     except:
         db.session.rollback()
         return jsonify({'error' : 'Unable to update event'}), 500
+    
+@app.route('/exit_group/<int:group_id>', methods=['DELETE'])
+@login_required
+def exit_group(group_id):
+    mem = Member.query.filter_by(user_id=current_user.user_id, group_id=group_id).first()
+    if mem:
+        try:
+            if mem.permission == 'Admin':
+                admin_count = (
+                    db.session.query(func.count(Member.member_id))
+                    .filter(
+                        Member.group_id == group_id,
+                        Member.permission == 'Admin',
+                        Member.status == 'Accepted'
+                    )
+                    .scalar()
+                )
+                if admin_count == 1:
+                    return jsonify({'error' : 'Assign an admin before leaving'}), 400
+
+            Participate.query.filter(
+                Participate.event.has(group_id=group_id),
+                Participate.user_id == mem.user_id
+            ).delete(synchronize_session=False)
+            db.session.delete(mem)
+            db.session.commit()
+        except:
+            return jsonify({'error' : 'Unable to exit group'}), 500
+    
+    return jsonify(success=True), 200

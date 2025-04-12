@@ -1573,7 +1573,12 @@ function load_calendar() {
               <div class="modal-content">
                   <div class="modal-header">
                       <h5 class="modal-title" id="editGroupModalLabel">Group Settings</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      <div class="ms-auto">
+                          <button type="button" class="btn btn-danger me-4" id="exitGroupBtn">
+                            <i class="bi bi-person-dash"></i> Exit Group
+                          </button>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
                   </div>
                   <div class="modal-body">
                       <form id="editGroupForm">
@@ -1653,6 +1658,27 @@ function load_calendar() {
         $('#groupDescDisplay').text("No description");
       }
       renderMembersList();
+
+      $('#exitGroupBtn').click(() => {
+        if (confirm('Are you sure you want to leave this group?')) {
+          $.ajax({
+            url: `/exit_group/${groupId}`,
+            type: 'DELETE',
+            success: () => {
+              modal.hide();
+              showFlashMessage('success', 'Exited Group');
+              refreshGroupList(1, true);
+              // Delete the cache of the group events
+              calendarCache.clear(groupId);
+            },
+            error: function (response) {
+              const errorResponse = JSON.parse(response.responseText);
+              showFlashMessage('error', errorResponse.error);
+              modal.hide();
+            }
+          });
+        }
+      });
 
       // Show modal after data loads
       modal.show();
