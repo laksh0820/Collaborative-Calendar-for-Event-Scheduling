@@ -49,7 +49,7 @@ def base():
     if (current_user.is_authenticated):
         return redirect(url_for('get_calendar'))
 
-    return render_template("base.html")
+    return render_template("cover.html")
 
 # To signin an existing user
 @app.route('/signin', methods=['GET','POST'])

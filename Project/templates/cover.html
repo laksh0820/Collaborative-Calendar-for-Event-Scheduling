@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block extra_header %}
+<script src="https://unpkg.com/lucide@latest"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<main class="content-area">
+    <div class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Streamline Your Event Management Journey</h1>
+                <p>Plan, organize, and execute events with ease. Your all-in-one platform for successful event
+                    management.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary">
+                        <a href="{{ url_for('signup') }}" style="color: white; text-decoration: none;">Get Started</a>
+                        <i data-lucide="arrow-right" class="btn-icon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800"
+                    alt="Event Planning">
+            </div>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature-card">
+            <i data-lucide="calendar" class="feature-icon"></i>
+            <h3>Smart Scheduling</h3>
+            <p>Intelligent calendar management with conflict detection and automated reminders.</p>
+        </div>
+        <div class="feature-card">
+            <i data-lucide="users" class="feature-icon"></i>
+            <h3>Team Collaboration</h3>
+            <p>Work seamlessly with your team, assign tasks, and track progress in real-time.</p>
+        </div>
+        <div class="feature-card">
+            <i data-lucide="bell" class="feature-icon"></i>
+            <h3>Smart Notifications</h3>
+            <p>Stay updated with intelligent notifications and event reminders.</p>
+        </div>
+    </div>
+</main>
+
+
+<style>
+    /* Base styles */
+    .content-area {
+        flex: 1;
+        padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 2rem 0;
+    }
+
+    .hero-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: center;
+    }
+
+    .hero-text h1 {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #111827;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+
+    .hero-text p {
+        font-size: 1.25rem;
+        color: #4B5563;
+        margin-bottom: 2rem;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #4F46E5;
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #4338CA;
+    }
+
+    .btn-secondary {
+        background-color: white !important;
+        color: #374151 !important;
+        border: 1px solid #D1D5DB !important;
+    }
+
+    .btn-secondary:hover {
+        background-color: #F9FAFB !important;
+    }
+
+    .btn-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-left: 0.5rem;
+    }
+
+    .hero-image img {
+        width: 100%;
+        border-radius: 0.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Features Section */
+    .features {
+        max-width: 1280px;
+        margin: 3rem auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .feature-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        color: #4F46E5;
+    }
+
+    .feature-card h3 {
+        margin: 1rem 0;
+        color: #111827;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    .feature-card p {
+        color: #4B5563;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .hero-content {
+            grid-template-columns: 1fr;
+        }
+
+        .features {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-text h1 {
+            font-size: 2.5rem;
+        }
+
+        .hero-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .hero {
+            padding: 1rem;
+        }
+    }
+</style>
+
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}
