@@ -29,3 +29,10 @@ class GroupForm(FlaskForm):
         validators=[DataRequired()]
     )
     submit = SubmitField('Save')
+
+class UserProfileForm(FlaskForm):
+    name = StringField("Name",validators=[DataRequired(), Length(max=200)])
+    email = StringField("Email",validators=[DataRequired(), Length(max=500)])
+    password = PasswordField("Password",validators=[DataRequired(), Length(min=MIN_PASSWORD_LEN,max=MAX_PASSWORD_LEN)])
+    save_changes = SubmitField("Save Changes")
+    cancel_changes = SubmitField("Cancel Changes")

@@ -1,7 +1,7 @@
 from flask import flash,redirect,url_for
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import login_user,login_required,current_user,logout_user
-from Project.forms import SignInForm,SignUpForm,GroupForm
+from Project.forms import SignInForm,SignUpForm,GroupForm,UserProfileForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
 from sqlalchemy import func, update, exists
@@ -106,6 +106,27 @@ def signout():
     logout_user()
     flash("Logged out Successfully",'success')
     return redirect(url_for('signin'))
+
+# To change user profile settings
+@app.route('/user_profile', methods = ['GET','POST'])
+@login_required
+def user_profile():
+    form = UserProfileForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(user_id=current_user.user_id).first()
+        if user:
+            user.name = form.name.data.strip()
+            user.email = form.email.data.strip()
+            user.password = generate_password_hash(str(form.password.data))
+            
+            try:
+                db.session.commit()
+                flash("Profile Settings Updates",'success')
+                return redirect(url_for('get_calendar'))
+            except:
+                flash("Unable to update profile settings",'danger')
+                return redirect(url_for('get_calendar'))
+    return render_template('user_profile.html',form=form,name=current_user.name,email=current_user.email)
 
 # Group creation
 @app.route('/create_group',methods=['GET','POST'])
@@ -383,7 +404,7 @@ def get_groups():
     return jsonify(groups_list)
 
 # To get the calendar for the group or individual
-@app.route('/calendar')
+@app.route('/calendar', methods=['GET','POST'])
 @login_required
 def get_calendar():
     groups = (
