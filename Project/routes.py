@@ -115,11 +115,10 @@ def user_profile():
     if form.validate_on_submit():
         user = User.query.filter_by(user_id=current_user.user_id).first()
         if user:
-            user.name = form.name.data.strip()
-            user.email = form.email.data.strip()
-            user.password = generate_password_hash(str(form.password.data))
-            
             try:
+                user.name = form.name.data.strip()
+                user.email = form.email.data.strip().lower()
+                user.password = generate_password_hash(str(form.password.data))
                 db.session.commit()
                 flash("Profile Settings Updates",'success')
                 return redirect(url_for('get_calendar'))
