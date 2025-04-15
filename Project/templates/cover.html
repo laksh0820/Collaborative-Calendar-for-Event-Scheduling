@@ -10,19 +10,20 @@
     <div class="hero">
         <div class="hero-content">
             <div class="hero-text">
-                <h1>Streamline Your Event Management Journey</h1>
-                <p>Plan, organize, and execute events with ease. Your all-in-one platform for successful event
-                    management.</p>
+                <h1>Streamline Workflow with Shared Calendars</h1>
+                <p>A unified space for teams to coordinate schedules, share events, and keep everything in sync.</p>
                 <div class="hero-buttons">
-                    <button class="btn btn-primary">
-                        <a href="{{ url_for('signup') }}" style="color: white; text-decoration: none;">Get Started</a>
-                        <i data-lucide="arrow-right" class="btn-icon"></i>
-                    </button>
+                    <a href="{{ url_for('signup') }}">
+                        <button class="btn btn-primary">
+                            <span style="color: white;">Get Started</span>
+                            <i data-lucide="arrow-right" class="btn-icon"></i>
+                        </button>
+                    </a>
                 </div>
             </div>
             <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800"
-                    alt="Event Planning">
+                <img src="{{ url_for('static',filename='assets/cover-photo.jpeg')}}"
+                    alt="Collaborative Calendar">
             </div>
         </div>
     </div>
@@ -30,18 +31,18 @@
     <div class="features">
         <div class="feature-card">
             <i data-lucide="calendar" class="feature-icon"></i>
-            <h3>Smart Scheduling</h3>
-            <p>Intelligent calendar management with conflict detection and automated reminders.</p>
+            <h3>One View for All Your Events</h3>
+            <p>See everything in your schedule - personal commitments and team events together - on your dashboard.</p>
         </div>
         <div class="feature-card">
             <i data-lucide="users" class="feature-icon"></i>
             <h3>Team Collaboration</h3>
-            <p>Work seamlessly with your team, assign tasks, and track progress in real-time.</p>
+            <p>Work seamlessly with various teams, invite members, track RSVPs, and adjust schedules in real-time.</p>
         </div>
         <div class="feature-card">
             <i data-lucide="bell" class="feature-icon"></i>
-            <h3>Smart Notifications</h3>
-            <p>Stay updated with intelligent notifications and event reminders.</p>
+            <h3>Instant Event Alerts</h3>
+            <p>Get notified when invited to events or groups. Respond with a single click.</p>
         </div>
     </div>
 </main>

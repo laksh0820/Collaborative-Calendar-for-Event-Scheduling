@@ -115,11 +115,10 @@ def user_profile():
         form = request.get_json()
         user = User.query.filter_by(user_id=current_user.user_id).first()
         if user:
-            user.name = form['name'].strip()
-            user.email = form['email'].strip()
-            user.password = generate_password_hash(str(form['password']))
-            
             try:
+                user.name = form['name'].strip()
+                user.email = form['email'].strip()
+                user.password = generate_password_hash(str(form['password']))
                 db.session.commit()
                 return jsonify(success=True), 200
             except:
