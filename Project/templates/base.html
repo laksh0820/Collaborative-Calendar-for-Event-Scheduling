@@ -71,7 +71,11 @@
         <span class="tooltip">Invites</span>
       </li>
       <li>
-        <a href="{{ url_for('user_profile') }}">
+        {% if current_user.is_authenticated %}
+          <a id="profile-settings-link">
+        {% else %}
+          <a href="{{ url_for('user_profile') }}">
+        {% endif %}
           <i class="bx bx-cog"></i>
           <span class="links_name">Settings</span>
         </a>

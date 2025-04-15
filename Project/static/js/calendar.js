@@ -829,7 +829,7 @@ function load_calendar() {
               deleted_participants.push(participant.email);
             }
           });
-          
+
           $.ajax({
             url: `/update_event/${event.extendedProps.event_id}`,
             type: 'PUT',
@@ -2459,3 +2459,246 @@ function create_group() {
 }
 
 // ------------------------------------- GROUP CREATION HANDLER -----------------------------------------
+
+// ------------------------------------- USER PROFILE SETTINGS HANDLER ----------------------------------
+
+function showProfileSettingsModal(username, useremail) {
+  const existingModal = document.getElementById('profileSettingsModal');
+  if (existingModal) existingModal.remove();
+
+  // create modal HTML structure
+  const modalHTML = `<!-- Modal -->
+    <div class="modal fade" id="profileSettingsModal" tabindex="-1" aria-labelledby="profileSettingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="profileSettingsModalLabel">Profile Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <style>
+                      .form-label {
+                      font-weight: 600;
+                      letter-spacing: 0.010em;
+                      font-size: 18px;
+                      margin-bottom: 2px;
+                      }
+                    </style>
+                    <form id="profileSettingsForm" action='/user_profile' method="POST">
+                        <!-- Name Field -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="">
+                            <div id="name-feedback" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <!-- Email Field -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="">
+                            <div id="email-feedback" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <!-- Password Field -->
+                        <div class="mb-3">
+                            <label for="Password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="Password" name="password">
+                            <div id="password-feedback" class="invalid-feedback"></div>
+                        </div>
+                        
+                        <!-- Show Password Toggle -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="togglePassword">
+                            <label class="form-check-label" for="togglePassword">
+                                <span class="text-success">Show Password</span>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="profileSettingsForm" class="btn btn-primary" id="save_changes_button">
+                        Save changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+  // Add modal to the body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // Initialize the default value
+  document.getElementById('name').value = username;
+  document.getElementById('email').value = useremail;
+
+  // Initialize the modal
+  const modal = new bootstrap.Modal(document.getElementById('profileSettingsModal'));
+
+  // Set up event listeners for the form validation
+  const setupFormValidation = () => {
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#Password');
+    togglePassword.addEventListener('click', () => {
+      // Toggle the type attribute using getAttribure() method
+      const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+      password.setAttribute('type', type);
+    });
+
+    const name = document.querySelector('#name');
+    function validateName() {
+      if (name.value === '') {
+        name.classList.add('is-invalid');
+        document.getElementById('name-feedback').textContent = 'Username can not be empty';
+        return false;
+      } else {
+        name.classList.remove('is-invalid');
+        document.getElementById('name-feedback').textContent = '';
+        return true;
+      }
+    }
+    name.addEventListener('input', validateName);
+
+    const email = document.querySelector('#email');
+    function validateEmail() {
+      // Email validation regex according to RFC 5322
+      const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      const isValidEmail = emailRegex.test(email.value);
+
+      if (!isValidEmail) {
+        email.classList.add('is-invalid');
+        document.getElementById('email-feedback').textContent = 'Invalid email address'
+      } else {
+        email.classList.remove('is-invalid');
+        document.getElementById('email-feedback').textContent = '';
+      }
+
+      return isValidEmail;
+    }
+    email.addEventListener('input', validateEmail);
+
+    function checkPassword(password) {
+      const minLength = 8;
+      const hasMinLength = password.length >= minLength;
+      const hasDigit = /\d/.test(password);
+      const hasLowercase = /[a-z]/.test(password);
+      const hasUppercase = /[A-Z]/.test(password);
+      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+      return {
+        isValid: hasMinLength && hasDigit && hasLowercase && hasUppercase && hasSpecialChar,
+        hasMinLength,
+        hasDigit,
+        hasLowercase,
+        hasUppercase,
+        hasSpecialChar
+      };
+    };
+
+    function updateDisplay(password, validation) {
+      if (!validation.hasMinLength) {
+        password.classList.add('is-invalid');
+        document.getElementById('password-feedback').textContent = 'Password must be at least 8 characters';
+      }
+      else if (!validation.hasDigit) {
+        password.classList.add('is-invalid');
+        document.getElementById('password-feedback').textContent = 'Password must have atleast one digit';
+      }
+      else if (!validation.hasLowercase) {
+        password.classList.add('is-invalid');
+        document.getElementById('password-feedback').textContent = 'Password must have atleast one lowercase character';
+      }
+      else if (!validation.hasUppercase) {
+        password.classList.add('is-invalid');
+        document.getElementById('password-feedback').textContent = 'Password must have atleast one uppercase character';
+      }
+      else if (!validation.hasSpecialChar) {
+        password.classList.add('is-invalid');
+        document.getElementById('password-feedback').textContent = 'Password must have atleast one special character';
+      }
+      else {
+        password.classList.remove('is-invalid');
+        document.getElementById('password-feedback').textContent = '';
+      }
+    };
+
+    function validatePassword() {
+      const validation = checkPassword(password.value);
+      updateDisplay(password, validation);
+      return validation.isValid;
+    }
+
+    password.addEventListener('input', validatePassword);
+
+    // Reset all the errors
+    name.classList.remove('is-invalid');
+    document.getElementById('name-feedback').textContent = '';
+    email.classList.remove('is-invalid');
+    document.getElementById('email-feedback').textContent = '';
+    password.classList.remove('is-invalid');
+    document.getElementById('password-feedback').textContent = '';
+
+    // Form submission handler
+    const submitBtn = document.getElementById('save_changes_button');
+    submitBtn.addEventListener('click', function (event) {
+      event.preventDefault();
+
+      // Validate all fields before submission
+      const isValidName = validateName();
+      const isValidEmail = validateEmail();
+      const isPasswordValid = validatePassword();
+
+      if (!isValidEmail || !isPasswordValid || !isValidName) {
+        event.stopPropagation();
+      }
+      else {
+        // Send the POST request to the Flask backend
+        $.ajax({
+          url: '/user_profile',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            name: $('#name').val().trim(),
+            email: $('#email').val().trim(),
+            password: $('#Password').val()
+          }),
+          success: function () {
+            modal.hide();
+            showFlashMessage('success', 'Profile settings updated');
+          },
+          error: function (response) {
+            const errorResponse = JSON.parse(response.responseText);
+            showFlashMessage('error', errorResponse.error);
+            modal.hide();
+          }
+        });
+      }
+    });
+  };
+
+  // Set up the validation when modal is shown
+  document.getElementById('profileSettingsModal').addEventListener('shown.bs.modal', setupFormValidation);
+
+  // Show the modal
+  modal.show();
+}
+
+document.getElementById('profile-settings-link').addEventListener('click', function (e) {
+  e.preventDefault();
+
+  // GET request to get the form, name and email
+  $.ajax({
+    url: '/user_profile',
+    type: 'GET',
+    contentType: 'application/json',
+    success: function (response) {
+      showProfileSettingsModal(response.name, response.email);
+    },
+    error: function (reponse) {
+      const errorResponse = JSON.parse(response.responseText);
+      showFlashMessage('error', errorResponse.error);
+    }
+  });
+});
+
+// ------------------------------------- USER PROFILE SETTINGS HANDLER ----------------------------------

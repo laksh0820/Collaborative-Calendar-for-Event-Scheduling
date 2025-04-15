@@ -1,7 +1,7 @@
 from flask import flash,redirect,url_for
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_login import login_user,login_required,current_user,logout_user
-from Project.forms import SignInForm,SignUpForm,GroupForm,UserProfileForm
+from Project.forms import SignInForm,SignUpForm,GroupForm
 from Project.models import User,Event,Group,Participate,Member
 from flask import request, render_template, jsonify
 from sqlalchemy import func, update, exists
@@ -111,22 +111,20 @@ def signout():
 @app.route('/user_profile', methods = ['GET','POST'])
 @login_required
 def user_profile():
-    form = UserProfileForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
+        form = request.get_json()
         user = User.query.filter_by(user_id=current_user.user_id).first()
         if user:
-            user.name = form.name.data.strip()
-            user.email = form.email.data.strip()
-            user.password = generate_password_hash(str(form.password.data))
+            user.name = form['name'].strip()
+            user.email = form['email'].strip()
+            user.password = generate_password_hash(str(form['password']))
             
             try:
                 db.session.commit()
-                flash("Profile Settings Updates",'success')
-                return redirect(url_for('get_calendar'))
+                return jsonify(success=True), 200
             except:
-                flash("Unable to update profile settings",'danger')
-                return redirect(url_for('get_calendar'))
-    return render_template('user_profile.html',form=form,name=current_user.name,email=current_user.email)
+                return jsonify({'error':'Unable to update profile settings'}), 500
+    return jsonify({'name':current_user.name, 'email':current_user.email}), 200
 
 # Group creation
 @app.route('/create_group',methods=['GET','POST'])
