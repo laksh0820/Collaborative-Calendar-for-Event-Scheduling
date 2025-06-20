@@ -1,1 +1,1 @@
-# Event Managment System
+# Collaborative Calendar for Event Scheduling
