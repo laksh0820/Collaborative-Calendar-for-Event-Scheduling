@@ -1,4 +1,4 @@
-# 📅 Event Management System
+# 📅 Collaborative Calendar for Event Scheduling
 
 ## 🔍 Project Overview
 
